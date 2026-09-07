@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mirroried LED Sponsor Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main>
+    <section id="loginView" class="login-shell">
+      <div class="login-card">
+        <div class="brand">MIRRORIED LED</div>
+        <h1>Sponsor Partner Portal</h1>
+        <p>Campaign status, approvals, deliverables, proof and reporting.</p>
+        <form id="loginForm">
+          <label>Email<input id="email" type="email" required autocomplete="username"></label>
+          <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
+          <button type="submit">Sign in</button>
+        </form>
+        <div id="demoBox" class="demo-box hidden">
+          <strong>Demo mode</strong>
+          <p>Password: <code>demo</code></p>
+          <div class="demo-actions">
+            <button data-demo="approver@demo.mirroriedled.local">Sponsor Approver</button>
+            <button data-demo="ops@demo.mirroriedled.local">Operations</button>
+            <button data-demo="admin@demo.mirroriedled.local">Administrator</button>
+          </div>
+        </div>
+        <p id="loginError" class="error"></p>
+      </div>
+    </section>
+
+    <section id="appView" class="app hidden">
+      <aside>
+        <div class="brand">MIRRORIED LED</div>
+        <nav id="nav"></nav>
+        <button id="logoutBtn" class="secondary">Sign out</button>
+      </aside>
+      <div class="workspace">
+        <header>
+          <div><h1 id="pageTitle">Dashboard</h1><p id="pageSub">Sponsor fulfillment and reporting</p></div>
+          <div id="userBadge" class="user-badge"></div>
+        </header>
+        <section id="content"></section>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
