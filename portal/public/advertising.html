@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Mirroried LED Advertising on the Go client booking portal.">
+  <title>Mirroried LED | Advertising on the Go</title>
+  <link rel="stylesheet" href="/advertising.css">
+</head>
+<body>
+  <main>
+    <section id="adLogin" class="login-shell">
+      <div class="login-card">
+        <a class="back" href="/">← Mirroried LED Marketing Platform</a>
+        <div class="brand">MIRRORIED LED</div>
+        <span class="kicker">ADVERTISING ON THE GO</span>
+        <h1>Book advertising where the showroom will be.</h1>
+        <p>Purchase a package, choose an approved event, select Showroom 1, Showroom 2 or both, then upload the campaign for review.</p>
+        <form id="adLoginForm">
+          <label>Email<input id="adEmail" type="email" autocomplete="username" required></label>
+          <label>Password<input id="adPassword" type="password" autocomplete="current-password" required></label>
+          <button class="primary" type="submit">Sign in</button>
+        </form>
+        <p id="adLoginError" class="error"></p>
+      </div>
+    </section>
+
+    <section id="adApp" class="app hidden">
+      <aside>
+        <div class="brand-block"><div class="brand">MIRRORIED LED</div><small>Advertising on the Go</small></div>
+        <nav id="adNav"></nav>
+        <button id="adLogout" class="secondary">Sign out</button>
+      </aside>
+      <div class="workspace">
+        <header>
+          <div><span class="kicker">PAID EVENT-BASED ADVERTISING</span><h1 id="adTitle">Dashboard</h1></div>
+          <div id="adUser" class="user-chip"></div>
+        </header>
+        <section id="adContent"></section>
+        <footer>Only approved public event information is shown. Private routes, fleet controls and internal operations remain private.</footer>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/advertising.js"></script>
+</body>
+</html>
