@@ -9,6 +9,9 @@
   "sponsors": [
     {"id":"spn-demo","name":"Demo Auto Group","status":"active","primaryContact":"Jordan Lee","email":"marketing@example.com","category":"Automotive","createdAt":"2026-09-01T16:00:00Z"}
   ],
+  "opportunities": [
+    {"id":"opp-demo","sponsorId":"spn-demo","name":"Demo Auto Group Fall Partnership","objective":"Local awareness and showroom visibility","status":"qualified","owner":"usr-sales","estimatedValue":2500,"contributionType":"cash","decisionMaker":"Jordan Lee","nextStep":"Confirm package and SOW","campaignId":null,"createdAt":"2026-09-01T16:30:00Z","updatedAt":"2026-09-06T18:00:00Z"}
+  ],
   "campaigns": [
     {"id":"cmp-demo-fall","sponsorId":"spn-demo","name":"Fall Showroom Campaign","objective":"Local brand visibility and showroom awareness","startDate":"2026-09-10","endDate":"2026-10-31","status":"scheduled","contractRef":"SOW-DEMO-001","creativeStatus":"awaiting-approval","renewalDate":"2026-10-15","renewalStatus":"not-started","createdAt":"2026-09-01T17:00:00Z","updatedAt":"2026-09-05T17:00:00Z"}
   ],
