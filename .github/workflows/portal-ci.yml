@@ -1,0 +1,39 @@
+name: Sponsor Portal CI
+
+on:
+  push:
+    paths:
+      - 'portal/**'
+      - '.github/workflows/portal-ci.yml'
+  pull_request:
+    paths:
+      - 'portal/**'
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check portal/server.js
+          node --check portal/public/app.js
+      - name: Start demo server
+        run: |
+          cd portal
+          DEMO_MODE=true PORT=3100 node server.js > /tmp/mirroried-portal.log 2>&1 &
+          echo $! > /tmp/mirroried-portal.pid
+      - name: Health and authentication smoke test
+        run: |
+          sleep 1
+          curl --fail http://127.0.0.1:3100/api/health
+          curl --fail -c /tmp/cookies.txt -H 'Content-Type: application/json' -d '{"email":"approver@demo.mirroriedled.local","password":"demo"}' http://127.0.0.1:3100/api/login
+          curl --fail -b /tmp/cookies.txt http://127.0.0.1:3100/api/dashboard
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/mirroried-portal.pid ]; then kill $(cat /tmp/mirroried-portal.pid) || true; fi
+          cat /tmp/mirroried-portal.log || true
