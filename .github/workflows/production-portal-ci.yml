@@ -1,4 +1,4 @@
-name: Production Sponsor Portal CI
+name: Production Marketing Portal CI
 
 on:
   push:
@@ -44,7 +44,7 @@ jobs:
 
       - name: Build production Docker image
         working-directory: portal
-        run: docker build -t mirroried-led-sponsor-portal:ci .
+        run: docker build -t mirroried-led-marketing-portal:ci .
 
       - name: Apply database migrations
         working-directory: portal
@@ -61,6 +61,17 @@ jobs:
           ADMIN_NAME: CI Administrator
         run: npm run db:bootstrap
 
+      - name: Create advertising test customer
+        working-directory: portal
+        env:
+          DATABASE_URL: postgresql://mirroried_test:mirroried_test_password@127.0.0.1:5432/mirroried_portal_test
+          ADVERTISER_NAME: CI Advertising Customer
+          ADVERTISER_CONTACT: CI Marketing Manager
+          ADVERTISER_EMAIL: ci-advertiser@mirroriedled.test
+          ADVERTISER_PASSWORD: ci-advertiser-password-12345
+          ADVERTISER_ROLE: advertiser_approver
+        run: npm run db:create-advertiser
+
       - name: Start production API in test mode
         working-directory: portal
         env:
@@ -76,14 +87,59 @@ jobs:
             sleep 1
           done
 
-      - name: Verify authenticated session
+      - name: Verify Sponsor Partner admin session
         run: |
-          curl -fsS -c /tmp/cookies.txt \
+          curl -fsS -c /tmp/admin-cookies.txt \
             -H 'Content-Type: application/json' \
             -d '{"email":"ci-admin@mirroriedled.test","password":"ci-password-very-long-12345"}' \
             http://127.0.0.1:3000/api/login
-          curl -fsS -b /tmp/cookies.txt http://127.0.0.1:3000/api/me
-          curl -fsS -b /tmp/cookies.txt http://127.0.0.1:3000/api/dashboard
+          curl -fsS -b /tmp/admin-cookies.txt http://127.0.0.1:3000/api/me
+          curl -fsS -b /tmp/admin-cookies.txt http://127.0.0.1:3000/api/dashboard
+
+      - name: Configure Advertising on the Go inventory
+        run: |
+          PKG=$(curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"name":"CI Two Showroom Tier","description":"CI package","price":500,"maxShowrooms":2}' \
+            http://127.0.0.1:3000/api/advertising/admin/packages | jq -r '.item.id')
+          SHR1=$(curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"name":"CI Trailer 1","publicLabel":"Showroom 1","assetType":"trailer"}' \
+            http://127.0.0.1:3000/api/advertising/admin/showrooms | jq -r '.item.id')
+          SHR2=$(curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"name":"CI Trailer 2","publicLabel":"Showroom 2","assetType":"trailer"}' \
+            http://127.0.0.1:3000/api/advertising/admin/showrooms | jq -r '.item.id')
+          EVT=$(curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"name":"CI Sporting Event","eventDate":"2099-12-31","venue":"CI Stadium","city":"Los Angeles","stateRegion":"CA","status":"public"}' \
+            http://127.0.0.1:3000/api/advertising/admin/events | jq -r '.item.id')
+          curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d "{\"showroomId\":\"$SHR1\",\"adSlotCapacity\":3}" \
+            http://127.0.0.1:3000/api/advertising/admin/events/$EVT/showrooms
+          curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d "{\"showroomId\":\"$SHR2\",\"adSlotCapacity\":3}" \
+            http://127.0.0.1:3000/api/advertising/admin/events/$EVT/showrooms
+          printf '%s' "$PKG" >/tmp/pkg-id
+          printf '%s' "$SHR1" >/tmp/shr1-id
+          printf '%s' "$SHR2" >/tmp/shr2-id
+          printf '%s' "$EVT" >/tmp/evt-id
+
+      - name: Verify advertiser calendar and two-showroom booking
+        run: |
+          curl -fsS -c /tmp/advertiser-cookies.txt \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"ci-advertiser@mirroriedled.test","password":"ci-advertiser-password-12345"}' \
+            http://127.0.0.1:3000/api/login
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/me
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/packages
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/events
+          PKG=$(cat /tmp/pkg-id)
+          SHR1=$(cat /tmp/shr1-id)
+          SHR2=$(cat /tmp/shr2-id)
+          EVT=$(cat /tmp/evt-id)
+          BOOKING=$(curl -fsS -b /tmp/advertiser-cookies.txt -H 'Content-Type: application/json' \
+            -d "{\"packageId\":\"$PKG\",\"eventId\":\"$EVT\",\"showroomIds\":[\"$SHR1\",\"$SHR2\"],\"campaignName\":\"CI Game Day Campaign\"}" \
+            http://127.0.0.1:3000/api/advertising/bookings)
+          echo "$BOOKING" | jq -e '.bookingId and .campaignId and .status == "payment-pending"'
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/bookings
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/campaigns
 
       - name: Print portal log on failure
         if: failure()
