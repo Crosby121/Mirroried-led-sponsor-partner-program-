@@ -1,0 +1,45 @@
+name: Release Safety CI
+
+on:
+  push:
+    paths:
+      - 'portal/deploy/**'
+      - '.github/workflows/deploy-hostinger.yml'
+      - '.github/workflows/go-live-gate.yml'
+      - '.github/workflows/release-safety-ci.yml'
+  pull_request:
+    paths:
+      - 'portal/deploy/**'
+      - '.github/workflows/deploy-hostinger.yml'
+      - '.github/workflows/go-live-gate.yml'
+      - '.github/workflows/release-safety-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Syntax check live acceptance script
+        run: node --check portal/deploy/live-acceptance.js
+      - name: Syntax check backup and restore scripts
+        run: |
+          sh -n portal/deploy/backup.sh
+          sh -n portal/deploy/restore.sh
+      - name: Validate Hostinger compose interpolation
+        env:
+          PORTAL_GIT_REF: ${{ github.sha }}
+          POSTGRES_DB: mirroried_sponsor_portal
+          POSTGRES_USER: mirroried_portal
+          POSTGRES_PASSWORD: ci-only-password
+          ADMIN_EMAIL: ci-admin@example.com
+          ADMIN_PASSWORD: ci-only-admin-password
+          APP_ORIGIN: https://sponsors.mirroriedled.com
+          TRUST_PROXY: 'true'
+          SESSION_HOURS: '8'
+          PORT: '3000'
+        run: docker compose -f portal/deploy/hostinger-compose.yml config >/dev/null
+      - name: Confirm destructive restore guard exists
+        run: grep -q 'RESTORE_CONFIRM' portal/deploy/restore.sh
