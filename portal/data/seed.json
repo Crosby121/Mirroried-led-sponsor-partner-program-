@@ -1,0 +1,35 @@
+{
+  "users": [
+    {"id":"usr-sponsor-viewer","email":"viewer@demo.mirroriedled.local","name":"Demo Sponsor Viewer","role":"sponsor_viewer","sponsorId":"spn-demo","demoOnly":true},
+    {"id":"usr-sponsor-approver","email":"approver@demo.mirroriedled.local","name":"Demo Sponsor Approver","role":"sponsor_approver","sponsorId":"spn-demo","demoOnly":true},
+    {"id":"usr-sales","email":"sales@demo.mirroriedled.local","name":"Demo Sales","role":"sales","sponsorId":null,"demoOnly":true},
+    {"id":"usr-ops","email":"ops@demo.mirroriedled.local","name":"Demo Operations","role":"operations","sponsorId":null,"demoOnly":true},
+    {"id":"usr-admin","email":"admin@demo.mirroriedled.local","name":"Demo Administrator","role":"admin","sponsorId":null,"demoOnly":true}
+  ],
+  "sponsors": [
+    {"id":"spn-demo","name":"Demo Auto Group","status":"active","primaryContact":"Jordan Lee","email":"marketing@example.com","category":"Automotive","createdAt":"2026-09-01T16:00:00Z"}
+  ],
+  "campaigns": [
+    {"id":"cmp-demo-fall","sponsorId":"spn-demo","name":"Fall Showroom Campaign","objective":"Local brand visibility and showroom awareness","startDate":"2026-09-10","endDate":"2026-10-31","status":"scheduled","contractRef":"SOW-DEMO-001","creativeStatus":"awaiting-approval","renewalDate":"2026-10-15","renewalStatus":"not-started","createdAt":"2026-09-01T17:00:00Z","updatedAt":"2026-09-05T17:00:00Z"}
+  ],
+  "deliverables": [
+    {"id":"del-window-01","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","name":"Exterior showroom infinity-mirror placement","type":"display-placement","status":"ready","plannedStart":"2026-09-10","plannedEnd":"2026-10-31","inventoryAssignment":"Exterior Window Position A","notes":"Activation begins after final creative approval."},
+    {"id":"del-video-01","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","name":"YouTube sponsor integration","type":"video-integration","status":"planned","plannedStart":"2026-09-15","plannedEnd":"2026-10-20","inventoryAssignment":"Approved Mirroried LED video content","notes":"Exact video/date confirmed in campaign schedule."}
+  ],
+  "assets": [
+    {"id":"ast-demo-logo","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","name":"Demo Sponsor Logo","fileName":"demo-logo.svg","mimeType":"image/svg+xml","url":"","status":"submitted","uploadedBy":"usr-sponsor-approver","uploadedAt":"2026-09-05T18:00:00Z"}
+  ],
+  "approvals": [
+    {"id":"apr-demo-creative","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","assetId":"ast-demo-logo","title":"Approve fall campaign creative","status":"pending","requestedAt":"2026-09-05T18:05:00Z","requestedBy":"usr-ops","decidedAt":null,"decidedBy":null,"comment":"Please confirm logo/art direction for production."}
+  ],
+  "proofs": [
+    {"id":"prf-demo-prep","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","deliverableId":"del-window-01","type":"production-photo","title":"Production preparation record","url":"","capturedAt":"2026-09-06T20:00:00Z","notes":"Demo proof record. Replace with actual approved proof during fulfillment.","createdBy":"usr-ops"}
+  ],
+  "reports": [
+    {"id":"rpt-demo","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","title":"Campaign Closeout Report","status":"draft","periodStart":"2026-09-10","periodEnd":"2026-10-31","summary":"Draft report will be completed from verified fulfillment records.","createdAt":"2026-09-06T20:15:00Z"}
+  ],
+  "renewals": [
+    {"id":"ren-demo","sponsorId":"spn-demo","campaignId":"cmp-demo-fall","status":"not-started","targetDate":"2026-10-15","owner":"sales","notes":"Review performance and confirmed inventory before renewal offer."}
+  ],
+  "audit": []
+}
