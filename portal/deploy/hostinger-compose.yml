@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mirroried_sponsor_portal}
+      POSTGRES_USER: ${POSTGRES_USER:-mirroried_portal}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mirroried_portal} -d ${POSTGRES_DB:-mirroried_sponsor_portal}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  portal:
+    build:
+      context: "https://github.com/Crosby121/Mirroried-led-sponsor-partner-program-.git#${PORTAL_GIT_REF:-main}:portal"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mirroried_portal}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mirroried_sponsor_portal}
+      DATABASE_SSL: disable
+      UPLOAD_DIR: /app/uploads
+      APP_ORIGIN: ${APP_ORIGIN:-https://sponsors.mirroriedled.com}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      SESSION_HOURS: ${SESSION_HOURS:-8}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      ADMIN_NAME: ${ADMIN_NAME:-Mirroried LED Administrator}
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    volumes:
+      - portal_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+volumes:
+  postgres_data:
+  portal_uploads:
