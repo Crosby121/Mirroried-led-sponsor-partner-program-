@@ -1,0 +1,61 @@
+name: Sponsor Portal Go-Live Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Run the complete live acceptance gate.'
+        required: true
+        type: choice
+        options:
+          - DO_NOT_RUN
+          - RUN_LIVE_GATE
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirroried-led-sponsor-portal-go-live
+  cancel-in-progress: false
+
+jobs:
+  live-acceptance:
+    if: ${{ inputs.confirm == 'RUN_LIVE_GATE' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate live acceptance configuration
+        env:
+          ADMIN_EMAIL: ${{ vars.PORTAL_ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.PORTAL_ADMIN_PASSWORD }}
+          SPONSOR_A_EMAIL: ${{ vars.PORTAL_TEST_SPONSOR_A_EMAIL }}
+          SPONSOR_A_PASSWORD: ${{ secrets.PORTAL_TEST_SPONSOR_A_PASSWORD }}
+          SPONSOR_B_EMAIL: ${{ vars.PORTAL_TEST_SPONSOR_B_EMAIL }}
+          SPONSOR_B_PASSWORD: ${{ secrets.PORTAL_TEST_SPONSOR_B_PASSWORD }}
+        run: |
+          set -eu
+          test -n "$ADMIN_EMAIL" || { echo 'Missing PORTAL_ADMIN_EMAIL variable'; exit 1; }
+          test -n "$ADMIN_PASSWORD" || { echo 'Missing PORTAL_ADMIN_PASSWORD secret'; exit 1; }
+          test -n "$SPONSOR_A_EMAIL" || { echo 'Missing PORTAL_TEST_SPONSOR_A_EMAIL variable'; exit 1; }
+          test -n "$SPONSOR_A_PASSWORD" || { echo 'Missing PORTAL_TEST_SPONSOR_A_PASSWORD secret'; exit 1; }
+          test -n "$SPONSOR_B_EMAIL" || { echo 'Missing PORTAL_TEST_SPONSOR_B_EMAIL variable'; exit 1; }
+          test -n "$SPONSOR_B_PASSWORD" || { echo 'Missing PORTAL_TEST_SPONSOR_B_PASSWORD secret'; exit 1; }
+
+      - name: Run public HTTPS and tenant-isolation acceptance tests
+        env:
+          PORTAL_URL: https://sponsors.mirroriedled.com
+          ADMIN_EMAIL: ${{ vars.PORTAL_ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.PORTAL_ADMIN_PASSWORD }}
+          SPONSOR_A_EMAIL: ${{ vars.PORTAL_TEST_SPONSOR_A_EMAIL }}
+          SPONSOR_A_PASSWORD: ${{ secrets.PORTAL_TEST_SPONSOR_A_PASSWORD }}
+          SPONSOR_B_EMAIL: ${{ vars.PORTAL_TEST_SPONSOR_B_EMAIL }}
+          SPONSOR_B_PASSWORD: ${{ secrets.PORTAL_TEST_SPONSOR_B_PASSWORD }}
+          REQUIRE_TENANT_TEST: 'true'
+        run: node portal/deploy/live-acceptance.js
+
+      - name: Go-live approval marker
+        run: |
+          echo 'GO-LIVE GATE PASSED.'
+          echo 'Before sending sponsor traffic, separately confirm backup/restore and Hostinger container health in hPanel.'
