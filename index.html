@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Mirroried LED Advertising on the Go — mobile showroom sponsorship and advertising portal." />
+  <title>Mirroried LED | Advertising on the Go</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="Mirroried LED home">
+      <span class="brand-mark">M</span>
+      <span><strong>Mirroried LED</strong><small>Advertising on the Go</small></span>
+    </a>
+    <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">☰</button>
+    <nav id="mainNav">
+      <a href="#home">Home</a>
+      <a href="#placements">Ad Spaces</a>
+      <a href="#partners">Sponsor Partners</a>
+      <a href="#events">Events</a>
+      <button class="btn btn-ghost" data-view="client">Client Portal</button>
+      <button class="btn btn-primary" data-view="admin">Admin</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="publicView" class="view active">
+      <section class="hero" id="home">
+        <div class="hero-copy">
+          <span class="eyebrow">MOBILE SHOWROOM • LIVE EVENTS • DIGITAL DISPLAY</span>
+          <h1>Your brand goes <span>where people go.</span></h1>
+          <p>Mirroried LED turns traveling showcase trailers and vans into premium advertising environments—inside the showroom, outside on LED displays, at live events, and across our digital content.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-large" data-view="client">Open Client Portal</button>
+            <a class="btn btn-outline btn-large" href="#placements">Explore Ad Spaces</a>
+          </div>
+          <div class="hero-proof">
+            <div><strong>Mobile</strong><span>Event-based exposure</span></div>
+            <div><strong>Flexible</strong><span>Interior + exterior inventory</span></div>
+            <div><strong>Verified</strong><span>Proof-of-delivery reporting</span></div>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Advertising network preview">
+          <div class="screen-glow">
+            <div class="screen-tag">LIVE NETWORK</div>
+            <h3>Trailer 001</h3>
+            <p>West Coast Event Circuit</p>
+            <div class="mini-grid">
+              <span>Exterior LED</span><b>LIVE</b>
+              <span>36×22 Window</span><b>RESERVED</b>
+              <span>Interior Mirrors</span><b>AVAILABLE</b>
+              <span>Social / Video</span><b>AVAILABLE</b>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" id="placements">
+        <div class="section-heading">
+          <span class="eyebrow">ADVERTISING INVENTORY</span>
+          <h2>One campaign. Multiple physical and digital touchpoints.</h2>
+          <p>Inventory is managed as individual advertising spaces so the system can scale from one trailer to a national fleet.</p>
+        </div>
+        <div class="card-grid four">
+          <article class="feature-card"><span class="icon">▰</span><h3>Exterior Displays</h3><p>Trailer wall panels, LED video walls, showcase van displays and exterior infinity-mirror windows.</p></article>
+          <article class="feature-card"><span class="icon">◇</span><h3>Interior Showroom</h3><p>Sponsor mirrors, branded product displays and digital screens inside the mobile showroom.</p></article>
+          <article class="feature-card"><span class="icon">◎</span><h3>Live Events</h3><p>Approved placements at sporting events, festivals, car shows and other high-traffic destinations.</p></article>
+          <article class="feature-card"><span class="icon">▶</span><h3>Digital Content</h3><p>Website, YouTube, social video and approved campaign mentions that extend the physical activation.</p></article>
+        </div>
+      </section>
+
+      <section class="section muted" id="partners">
+        <div class="split">
+          <div>
+            <span class="eyebrow">SPONSOR PARTNER PROGRAM</span>
+            <h2>More than an ad buy.</h2>
+            <p>Partner programs can combine display placement, branded mirrors, event visibility and digital deliverables under a written campaign agreement.</p>
+          </div>
+          <div class="tier-list">
+            <div><strong>Local Sponsor</strong><span>Entry-level recurring placement</span></div>
+            <div><strong>Featured Sponsor</strong><span>Expanded visibility across approved inventory</span></div>
+            <div><strong>Main Trailer Sponsor</strong><span>Premium trailer-level presence</span></div>
+            <div><strong>Build Partner</strong><span>In-kind or hybrid partnership structure</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="events">
+        <div class="section-heading">
+          <span class="eyebrow">WHERE WE GO</span>
+          <h2>Built for moving audiences.</h2>
+          <p>Campaign schedules show approved event and placement information without exposing private fleet operations.</p>
+        </div>
+        <div class="event-strip">
+          <span>SPORTING EVENTS</span><span>CAR SHOWS</span><span>FESTIVALS</span><span>COMMUNITY EVENTS</span><span>SPECIAL ACTIVATIONS</span>
+        </div>
+      </section>
+
+      <section class="cta-section">
+        <div><span class="eyebrow">READY TO ADVERTISE?</span><h2>Manage your campaign from one portal.</h2><p>Review placements, submit creative, approve deliverables and see verified proof of delivery.</p></div>
+        <button class="btn btn-primary btn-large" data-view="client">Enter Client Portal</button>
+      </section>
+    </section>
+
+    <section id="clientView" class="view portal-shell" aria-label="Advertiser client portal">
+      <aside class="portal-sidebar">
+        <div class="portal-brand"><span class="brand-mark">M</span><div><strong>Client Portal</strong><small>Advertising on the Go</small></div></div>
+        <nav class="portal-nav" id="clientNav">
+          <button class="active" data-panel="client-dashboard">⌂ <span>Dashboard</span></button>
+          <button data-panel="client-campaigns">▣ <span>Campaigns</span></button>
+          <button data-panel="client-placements">▦ <span>Ad Spaces</span></button>
+          <button data-panel="client-creative">↑ <span>Creative Upload</span></button>
+          <button data-panel="client-proof">✓ <span>Proof of Delivery</span></button>
+          <button data-panel="client-billing">$ <span>Billing</span></button>
+        </nav>
+        <button class="btn btn-outline full" data-view="public">← Public Site</button>
+      </aside>
+      <div class="portal-main">
+        <div class="portal-topbar"><div><small>ADVERTISER ACCOUNT</small><h2 id="clientTitle">Dashboard</h2></div><div class="account-chip"><span>AC</span><div><strong>Acme Demo Co.</strong><small>Advertiser</small></div></div></div>
+
+        <section class="portal-panel active" id="client-dashboard">
+          <div class="welcome"><div><span class="eyebrow">CAMPAIGN OVERVIEW</span><h2>Good morning, Acme Demo Co.</h2><p>Everything currently approved for your Mirroried LED advertising account.</p></div><button class="btn btn-primary" data-panel-jump="client-creative">Upload Creative</button></div>
+          <div class="stats-grid" id="clientStats"></div>
+          <div class="dashboard-grid">
+            <div class="panel-card"><div class="card-head"><h3>Active Campaigns</h3><button class="text-button" data-panel-jump="client-campaigns">View all</button></div><div id="clientCampaignSummary"></div></div>
+            <div class="panel-card"><div class="card-head"><h3>Upcoming Placements</h3><button class="text-button" data-panel-jump="client-placements">View spaces</button></div><div id="clientPlacementSummary"></div></div>
+          </div>
+          <div class="policy-note"><strong>Verified reporting policy</strong><p>Mirroried LED reports written deliverables and evidence we can verify. The portal does not claim unverified impressions, audience size, sales or 24/7 exposure.</p></div>
+        </section>
+
+        <section class="portal-panel" id="client-campaigns"><div class="panel-card"><div class="card-head"><div><h3>My Campaigns</h3><p>Active, upcoming and completed campaign agreements.</p></div><span class="status-pill info">CLIENT VIEW</span></div><div class="table-wrap"><table><thead><tr><th>Campaign</th><th>Status</th><th>Dates</th><th>Placements</th><th>Deliverables</th></tr></thead><tbody id="clientCampaignTable"></tbody></table></div></div></section>
+
+        <section class="portal-panel" id="client-placements"><div class="panel-card"><div class="card-head"><div><h3>Advertising Spaces</h3><p>Spaces approved or available for your account.</p></div></div><div class="inventory-grid" id="clientInventory"></div></div></section>
+
+        <section class="portal-panel" id="client-creative"><div class="dashboard-grid"><div class="panel-card"><h3>Submit Campaign Creative</h3><p>Upload artwork metadata for review. Production storage/API wiring is the next backend phase.</p><form id="creativeForm" class="form-stack"><label>Campaign<select id="creativeCampaign"></select></label><label>Creative type<select id="creativeType"><option>Logo</option><option>Static Image</option><option>Video</option><option>QR Destination</option></select></label><label>Choose file<input id="creativeFile" type="file" accept="image/*,video/*,.pdf" /></label><label>Destination / notes<textarea id="creativeNotes" rows="4" placeholder="Website URL, QR destination, display notes..."></textarea></label><button class="btn btn-primary" type="submit">Submit for Review</button></form></div><div class="panel-card"><div class="card-head"><h3>Submission Status</h3><span class="status-pill warning">REVIEW WORKFLOW</span></div><div id="creativeSubmissions" class="stack-list"></div></div></div></section>
+
+        <section class="portal-panel" id="client-proof"><div class="panel-card"><div class="card-head"><div><h3>Proof of Delivery</h3><p>Verified campaign evidence and completed deliverables.</p></div></div><div id="proofList" class="proof-grid"></div></div></section>
+
+        <section class="portal-panel" id="client-billing"><div class="dashboard-grid"><div class="panel-card"><h3>Account Balance</h3><div class="balance"><small>CURRENT BALANCE</small><strong>$500.00</strong><span>Due Sep 15, 2026</span></div><button class="btn btn-primary full" type="button">Payment Integration — Next Phase</button></div><div class="panel-card"><h3>Invoices</h3><div class="stack-list"><div><span><strong>INV-1003</strong><small>September Campaign</small></span><b>$500.00</b></div><div><span><strong>INV-1002</strong><small>August Campaign</small></span><b class="success-text">PAID</b></div></div></div></div></section>
+      </div>
+    </section>
+
+    <section id="adminView" class="view portal-shell admin-shell" aria-label="Advertising operations admin">
+      <aside class="portal-sidebar">
+        <div class="portal-brand"><span class="brand-mark">M</span><div><strong>Operations</strong><small>Private Admin</small></div></div>
+        <nav class="portal-nav" id="adminNav">
+          <button class="active" data-panel="admin-dashboard">⌂ <span>Dashboard</span></button>
+          <button data-panel="admin-campaigns">▣ <span>Campaigns</span></button>
+          <button data-panel="admin-inventory">▦ <span>Inventory</span></button>
+          <button data-panel="admin-creative">✓ <span>Creative Approval</span></button>
+          <button data-panel="admin-network">◆ <span>Fleet / Network</span></button>
+        </nav>
+        <button class="btn btn-outline full" data-view="public">← Public Site</button>
+      </aside>
+      <div class="portal-main">
+        <div class="portal-topbar"><div><small>PRIVATE OPERATIONS</small><h2 id="adminTitle">Advertising Dashboard</h2></div><div class="account-chip"><span>ML</span><div><strong>Mirroried LED</strong><small>Administrator</small></div></div></div>
+        <section class="portal-panel active" id="admin-dashboard"><div class="stats-grid" id="adminStats"></div><div class="dashboard-grid"><div class="panel-card"><div class="card-head"><h3>Campaign Pipeline</h3><span class="status-pill info">LIVE DATA MODEL</span></div><div id="adminCampaignSummary"></div></div><div class="panel-card"><div class="card-head"><h3>Inventory Utilization</h3><button class="text-button" data-panel-jump="admin-inventory">Manage</button></div><div id="utilizationChart"></div></div></div></section>
+        <section class="portal-panel" id="admin-campaigns"><div class="panel-card"><div class="card-head"><div><h3>Campaign Management</h3><p>Change workflow status without exposing internal operations to clients.</p></div><button class="btn btn-primary" id="addCampaignBtn">+ Add Demo Campaign</button></div><div class="table-wrap"><table><thead><tr><th>Campaign</th><th>Advertiser</th><th>Status</th><th>Dates</th><th>Action</th></tr></thead><tbody id="adminCampaignTable"></tbody></table></div></div></section>
+        <section class="portal-panel" id="admin-inventory"><div class="panel-card"><div class="card-head"><div><h3>Advertising Inventory</h3><p>Every physical/digital placement is an independently managed space.</p></div></div><div class="inventory-grid" id="adminInventory"></div></div></section>
+        <section class="portal-panel" id="admin-creative"><div class="panel-card"><div class="card-head"><div><h3>Creative Approval Queue</h3><p>Approve or reject advertiser submissions before scheduling.</p></div></div><div id="adminCreativeQueue" class="stack-list"></div></div></section>
+        <section class="portal-panel" id="admin-network"><div class="dashboard-grid"><div class="panel-card"><h3>Trailer 001</h3><div class="network-card"><span class="status-dot"></span><div><strong>West Coast Event Circuit</strong><small>8 advertising spaces configured</small></div></div><div class="meter"><span style="width:62%"></span></div><small>62% inventory reserved or live</small></div><div class="panel-card"><h3>Scale-ready structure</h3><p>New trailers, vans and showroom units can be added as network assets without changing the advertiser portal model.</p><div class="network-path">NETWORK → ASSET → SPACE → CAMPAIGN → PROOF</div></div></div></section>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
