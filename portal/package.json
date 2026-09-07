@@ -10,7 +10,8 @@
     "dev": "DEMO_MODE=true node server.js",
     "db:migrate": "node db/migrate.js",
     "db:bootstrap": "node db/bootstrap-admin.js",
-    "check": "node --check production-server.js && node --check server.js && node --check public/app.js && node --check db/migrate.js && node --check db/bootstrap-admin.js"
+    "db:create-sponsor": "node db/create-sponsor.js",
+    "check": "node --check production-server.js && node --check server.js && node --check public/app.js && node --check db/migrate.js && node --check db/bootstrap-admin.js && node --check db/create-sponsor.js"
   },
   "dependencies": {
     "express": "^5.1.0",
