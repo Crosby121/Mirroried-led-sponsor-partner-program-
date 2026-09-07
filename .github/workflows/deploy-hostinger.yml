@@ -4,12 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type DEPLOY by selecting it below to start the production deployment.'
+        description: 'Select DEPLOY to start the production deployment.'
         required: true
         type: choice
         options:
           - DO_NOT_DEPLOY
           - DEPLOY
+      release_ref:
+        description: 'Optional full 40-character commit SHA to deploy or roll back to. Leave blank to deploy this workflow commit.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -25,6 +29,21 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v5
+
+      - name: Resolve exact release commit
+        id: release
+        env:
+          REQUESTED_REF: ${{ inputs.release_ref }}
+        run: |
+          set -eu
+          REF="$REQUESTED_REF"
+          if [ -z "$REF" ]; then REF="$GITHUB_SHA"; fi
+          case "$REF" in
+            *[!0-9a-fA-F]*) echo 'release_ref must be a full hexadecimal commit SHA'; exit 1 ;;
+          esac
+          [ "${#REF}" -eq 40 ] || { echo 'release_ref must be exactly 40 hexadecimal characters'; exit 1; }
+          echo "value=$REF" >> "$GITHUB_OUTPUT"
+          echo "Resolved release commit: $REF"
 
       - name: Validate required deployment configuration
         env:
@@ -43,7 +62,7 @@ jobs:
 
       - name: Validate Hostinger compose file
         env:
-          PORTAL_GIT_REF: ${{ github.sha }}
+          PORTAL_GIT_REF: ${{ steps.release.outputs.value }}
           POSTGRES_DB: mirroried_sponsor_portal
           POSTGRES_USER: mirroried_portal
           POSTGRES_PASSWORD: ${{ secrets.PORTAL_POSTGRES_PASSWORD }}
@@ -56,7 +75,7 @@ jobs:
           PORT: '3000'
         run: docker compose -f portal/deploy/hostinger-compose.yml config >/dev/null
 
-      - name: Deploy to Hostinger VPS
+      - name: Deploy exact release to Hostinger VPS
         uses: hostinger/deploy-on-vps@v2
         with:
           api-key: ${{ secrets.HOSTINGER_API_KEY }}
@@ -64,7 +83,7 @@ jobs:
           project-name: mirroried-led-sponsor-portal
           docker-compose-path: portal/deploy/hostinger-compose.yml
           environment-variables: |
-            PORTAL_GIT_REF=${{ github.sha }}
+            PORTAL_GIT_REF=${{ steps.release.outputs.value }}
             POSTGRES_DB=mirroried_sponsor_portal
             POSTGRES_USER=mirroried_portal
             POSTGRES_PASSWORD=${{ secrets.PORTAL_POSTGRES_PASSWORD }}
@@ -79,4 +98,6 @@ jobs:
       - name: Deployment handoff
         run: |
           echo 'Hostinger deployment request submitted.'
-          echo 'Next: point sponsors.mirroriedled.com to the VPS and attach that domain to the Docker project in hPanel so Hostinger/Traefik can issue HTTPS.'
+          echo 'Release commit: ${{ steps.release.outputs.value }}'
+          echo 'Run Sponsor Portal Go-Live Gate only after DNS, domain attachment and HTTPS are active.'
+          echo 'For rollback, run this workflow again with a previously known-good 40-character commit SHA.'
