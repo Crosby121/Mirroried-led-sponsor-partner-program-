@@ -27,24 +27,37 @@ Mirroried LED sponsorships are structured as measurable marketing/business partn
 - `07-portal/` — sponsor portal requirements, permissions, data model
 - `08-operations/` — CRM pipeline, handoffs, renewal and offboarding
 - `templates/` — outreach, proposal, recap, and follow-up templates
-- `portal/` — deployable Sponsor Partner Portal application
+- `portal/` — Sponsor Partner Portal application and production stack
 
 ## Sponsor Portal
 
-Phase 2 is implemented in `portal/`.
+The portal now has two deliberately separate runtime paths.
 
-The portal includes:
-- session authentication;
+### Production
+`portal/production-server.js`
+
+Production uses PostgreSQL and includes:
+- database-backed authentication sessions;
 - sponsor-specific tenant isolation;
 - role-based access for sponsor viewers, sponsor approvers, sales, operations, and administrators;
-- campaign and deliverable visibility;
-- creative asset upload and approval decisions;
-- proof-of-performance records;
-- reports and renewal tracking;
+- opportunity → campaign handoff;
+- campaigns and deliverables;
+- protected creative upload/download;
+- sponsor creative approvals;
+- proof-of-performance;
+- closeout report generation;
+- renewal tracking;
 - audit logging;
-- mobile-responsive browser interface.
+- Docker Compose deployment with persistent PostgreSQL and upload volumes;
+- automated migrations and administrator bootstrap;
+- PostgreSQL integration CI.
 
-See `portal/README.md` for demo and production deployment instructions.
+### Demo/development
+`portal/server.js`
+
+The original JSON-backed server remains available as the lightweight demo environment and is not the production datastore.
+
+See `portal/README.md` for production deployment instructions.
 
 ## Sales pipeline
 `Target -> Contacted -> Discovery -> Qualified -> Proposal -> Negotiation -> Contracted -> Onboarding -> Active -> Reporting -> Renewal/Closed`
@@ -58,4 +71,4 @@ Do **not** say: “You will get X impressions,” “this will generate X sales,
 Prefer: “We can guarantee the written placements, content, display windows, campaign dates, approved video integrations, and reporting items listed in the agreement.”
 
 ## Version
-**2.0 — Sponsor Partner Program + deployable Sponsor Portal foundation**
+**2.1 — Sponsor Partner Program + PostgreSQL production Sponsor Portal**
