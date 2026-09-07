@@ -1,8 +1,13 @@
 const $ = (s) => document.querySelector(s);
 const state = { user:null, page:'dashboard', demoMode:false };
-const pages = [
+const basePages = [
   ['dashboard','Dashboard'],['campaigns','Campaigns'],['deliverables','Deliverables'],['approvals','Approvals'],['assets','Creative Assets'],['proofs','Proof'],['reports','Reports'],['renewals','Renewals']
 ];
+function visiblePages(){
+  const pages=[...basePages];
+  if(['sales','admin'].includes(state.user?.role)) pages.splice(1,0,['opportunities','Opportunities']);
+  return pages;
+}
 async function api(url, options={}) {
   const res = await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});
   const body = await res.json().catch(()=>({}));
@@ -15,7 +20,7 @@ function showLogin(){ $('#loginView').classList.remove('hidden'); $('#appView').
 function showApp(){
   $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden');
   $('#userBadge').innerHTML=`<strong>${esc(state.user.name)}</strong><span>${esc(state.user.role.replaceAll('_',' '))}</span>`;
-  $('#nav').innerHTML=pages.map(([id,label])=>`<button class="nav-btn ${state.page===id?'active':''}" data-page="${id}">${label}</button>`).join('');
+  $('#nav').innerHTML=visiblePages().map(([id,label])=>`<button class="nav-btn ${state.page===id?'active':''}" data-page="${id}">${label}</button>`).join('');
   document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{state.page=b.dataset.page;showApp();loadPage();});
 }
 function cards(summary){return `<div class="cards">
@@ -30,7 +35,7 @@ function table(items, cols){
   return `<div class="table-wrap"><table><thead><tr>${cols.map(c=>`<th>${esc(c[0])}</th>`).join('')}</tr></thead><tbody>${items.map(item=>`<tr>${cols.map(([_,key,fn])=>`<td>${fn?fn(item[key],item):esc(item[key]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 async function loadPage(){
-  const titles={dashboard:'Dashboard',campaigns:'Campaigns',deliverables:'Deliverables',approvals:'Approvals',assets:'Creative Assets',proofs:'Proof of Performance',reports:'Reports',renewals:'Renewals'};
+  const titles={dashboard:'Dashboard',opportunities:'Opportunities',campaigns:'Campaigns',deliverables:'Deliverables',approvals:'Approvals',assets:'Creative Assets',proofs:'Proof of Performance',reports:'Reports',renewals:'Renewals'};
   $('#pageTitle').textContent=titles[state.page]||'Portal'; $('#content').innerHTML='<div class="loading">Loading…</div>';
   try{
     if(state.page==='dashboard'){
@@ -39,14 +44,33 @@ async function loadPage(){
       return;
     }
     const data=await api(`/api/${state.page}`); const items=data.items||[];
+    if(state.page==='opportunities') renderOpportunities(items);
     if(state.page==='campaigns') $('#content').innerHTML=`<section class="panel">${table(items,[['Campaign','name'],['Objective','objective'],['Status','status',badge],['Start','startDate'],['End','endDate'],['Contract','contractRef']])}</section>`;
     if(state.page==='deliverables') $('#content').innerHTML=`<section class="panel">${table(items,[['Deliverable','name'],['Type','type'],['Status','status',badge],['Placement','inventoryAssignment'],['Notes','notes']])}</section>`;
     if(state.page==='approvals') renderApprovals(items);
     if(state.page==='assets') renderAssets(items);
     if(state.page==='proofs') $('#content').innerHTML=`<section class="panel">${table(items,[['Proof','title'],['Type','type'],['Captured','capturedAt'],['Notes','notes'],['Link','url',(v)=>v?`<a href="${esc(v)}" target="_blank" rel="noopener">Open</a>`:'—']])}</section>`;
-    if(state.page==='reports') $('#content').innerHTML=`<section class="panel">${table(items,[['Report','title'],['Status','status',badge],['Period start','periodStart'],['Period end','periodEnd'],['Summary','summary']])}</section>`;
+    if(state.page==='reports') renderReports(items);
     if(state.page==='renewals') $('#content').innerHTML=`<section class="panel">${table(items,[['Status','status',badge],['Target date','targetDate'],['Owner','owner'],['Notes','notes']])}</section>`;
   }catch(e){$('#content').innerHTML=`<div class="error-box">${esc(e.message)}</div>`;}
+}
+function renderOpportunities(items){
+  const rows=table(items,[['Opportunity','name'],['Sponsor ID','sponsorId'],['Status','status',badge],['Value','estimatedValue',(v)=>`$${Number(v||0).toLocaleString()}`],['Decision maker','decisionMaker'],['Next step','nextStep'],['Campaign','campaignId'],['Action','id',(_,i)=>!['won','lost'].includes(i.status)?`<button data-win="${esc(i.id)}">Mark won + handoff</button>`:'—']]);
+  $('#content').innerHTML=`<div class="grid-2"><section class="panel"><h2>Sales pipeline</h2>${rows}</section><section class="panel"><h2>Create opportunity</h2><form id="oppForm" class="stack"><label>Sponsor ID<input id="oppSponsor" required placeholder="spn-..."></label><label>Opportunity name<input id="oppName" required></label><label>Objective<input id="oppObjective"></label><label>Estimated value<input id="oppValue" type="number" min="0" step="1"></label><label>Decision maker<input id="oppDecision"></label><label>Next step<input id="oppNext"></label><button type="submit">Create opportunity</button></form></section></div>`;
+  $('#oppForm').onsubmit=createOpportunity;
+  document.querySelectorAll('[data-win]').forEach(b=>b.onclick=()=>winOpportunity(b.dataset.win));
+}
+async function createOpportunity(e){
+  e.preventDefault();
+  const body={sponsorId:$('#oppSponsor').value.trim(),name:$('#oppName').value.trim(),objective:$('#oppObjective').value.trim(),estimatedValue:Number($('#oppValue').value||0),decisionMaker:$('#oppDecision').value.trim(),nextStep:$('#oppNext').value.trim(),status:'target'};
+  try{await api('/api/opportunities',{method:'POST',body:JSON.stringify(body)});loadPage();}catch(err){alert(err.message);}
+}
+async function winOpportunity(id){
+  const campaignName=prompt('Campaign name for the handoff:')||''; if(!campaignName)return;
+  const startDate=prompt('Campaign start date (YYYY-MM-DD), optional:')||'';
+  const endDate=prompt('Campaign end date (YYYY-MM-DD), optional:')||'';
+  const contractRef=prompt('Contract / SOW reference, optional:')||'';
+  try{await api(`/api/opportunities/${id}`,{method:'PATCH',body:JSON.stringify({status:'won',campaignName,startDate,endDate,contractRef})});alert('Opportunity marked won and draft campaign created.');loadPage();}catch(err){alert(err.message);}
 }
 function renderApprovals(items){
   const canDecide=['sponsor_approver','operations','admin'].includes(state.user.role);
@@ -71,11 +95,21 @@ async function uploadAsset(e){
   if($('#assetSponsor'))body.sponsorId=$('#assetSponsor').value.trim();
   try{await api('/api/assets',{method:'POST',body:JSON.stringify(body)});loadPage();}catch(err){alert(err.message);}
 }
+function renderReports(items){
+  const canGenerate=['operations','admin'].includes(state.user.role);
+  const rows=table(items,[['Report','title'],['Status','status',badge],['Period start','periodStart'],['Period end','periodEnd'],['Summary','summary']]);
+  $('#content').innerHTML=canGenerate?`<div class="grid-2"><section class="panel"><h2>Reports</h2>${rows}</section><section class="panel"><h2>Generate closeout report</h2><form id="reportForm" class="stack"><label>Sponsor ID<input id="reportSponsor" required placeholder="spn-..."></label><label>Campaign ID<input id="reportCampaign" required placeholder="cmp-..."></label><label>Report title<input id="reportTitle" placeholder="Campaign Closeout Report"></label><button type="submit">Generate from fulfillment records</button><p class="muted">Uses current deliverable statuses and proof records.</p></form></section></div>`:`<section class="panel">${rows}</section>`;
+  if(canGenerate) $('#reportForm').onsubmit=generateReport;
+}
+async function generateReport(e){
+  e.preventDefault();const body={sponsorId:$('#reportSponsor').value.trim(),campaignId:$('#reportCampaign').value.trim(),title:$('#reportTitle').value.trim()};
+  try{await api('/api/reports/generate',{method:'POST',body:JSON.stringify(body)});loadPage();}catch(err){alert(err.message);}
+}
 async function boot(){
   try{const cfg=await api('/api/config');state.demoMode=cfg.demoMode;if(cfg.demoMode)$('#demoBox').classList.remove('hidden');}catch{}
   try{const me=await api('/api/me');state.user=me.user;showApp();loadPage();}catch{showLogin();}
 }
 $('#loginForm').onsubmit=async(e)=>{e.preventDefault();$('#loginError').textContent='';try{const r=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('#email').value,password:$('#password').value})});state.user=r.user;showApp();loadPage();}catch(err){$('#loginError').textContent=err.message;}};
 document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>{$('#email').value=b.dataset.demo;$('#password').value='demo';$('#loginForm').requestSubmit();});
-$('#logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'}).catch(()=>{});state.user=null;showLogin();};
+$('#logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'}).catch(()=>{});state.user=null;state.page='dashboard';showLogin();};
 boot();
