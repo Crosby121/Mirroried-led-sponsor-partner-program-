@@ -1,0 +1,82 @@
+name: Deploy Sponsor Portal to Hostinger
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY by selecting it below to start the production deployment.'
+        required: true
+        type: choice
+        options:
+          - DO_NOT_DEPLOY
+          - DEPLOY
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirroried-led-sponsor-portal-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ inputs.confirm == 'DEPLOY' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate required deployment configuration
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+          HOSTINGER_VM_ID: ${{ vars.HOSTINGER_VM_ID }}
+          POSTGRES_PASSWORD: ${{ secrets.PORTAL_POSTGRES_PASSWORD }}
+          ADMIN_EMAIL: ${{ vars.PORTAL_ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.PORTAL_ADMIN_PASSWORD }}
+        run: |
+          set -eu
+          test -n "$HOSTINGER_API_KEY" || { echo 'Missing HOSTINGER_API_KEY secret'; exit 1; }
+          test -n "$HOSTINGER_VM_ID" || { echo 'Missing HOSTINGER_VM_ID variable'; exit 1; }
+          test -n "$POSTGRES_PASSWORD" || { echo 'Missing PORTAL_POSTGRES_PASSWORD secret'; exit 1; }
+          test -n "$ADMIN_EMAIL" || { echo 'Missing PORTAL_ADMIN_EMAIL variable'; exit 1; }
+          test -n "$ADMIN_PASSWORD" || { echo 'Missing PORTAL_ADMIN_PASSWORD secret'; exit 1; }
+
+      - name: Validate Hostinger compose file
+        env:
+          PORTAL_GIT_REF: ${{ github.sha }}
+          POSTGRES_DB: mirroried_sponsor_portal
+          POSTGRES_USER: mirroried_portal
+          POSTGRES_PASSWORD: ${{ secrets.PORTAL_POSTGRES_PASSWORD }}
+          ADMIN_EMAIL: ${{ vars.PORTAL_ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.PORTAL_ADMIN_PASSWORD }}
+          ADMIN_NAME: Mirroried LED Administrator
+          APP_ORIGIN: https://sponsors.mirroriedled.com
+          TRUST_PROXY: 'true'
+          SESSION_HOURS: '8'
+          PORT: '3000'
+        run: docker compose -f portal/deploy/hostinger-compose.yml config >/dev/null
+
+      - name: Deploy to Hostinger VPS
+        uses: hostinger/deploy-on-vps@v2
+        with:
+          api-key: ${{ secrets.HOSTINGER_API_KEY }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
+          project-name: mirroried-led-sponsor-portal
+          docker-compose-path: portal/deploy/hostinger-compose.yml
+          environment-variables: |
+            PORTAL_GIT_REF=${{ github.sha }}
+            POSTGRES_DB=mirroried_sponsor_portal
+            POSTGRES_USER=mirroried_portal
+            POSTGRES_PASSWORD=${{ secrets.PORTAL_POSTGRES_PASSWORD }}
+            ADMIN_EMAIL=${{ vars.PORTAL_ADMIN_EMAIL }}
+            ADMIN_PASSWORD=${{ secrets.PORTAL_ADMIN_PASSWORD }}
+            ADMIN_NAME=Mirroried LED Administrator
+            APP_ORIGIN=https://sponsors.mirroriedled.com
+            TRUST_PROXY=true
+            SESSION_HOURS=8
+            PORT=3000
+
+      - name: Deployment handoff
+        run: |
+          echo 'Hostinger deployment request submitted.'
+          echo 'Next: point sponsors.mirroriedled.com to the VPS and attach that domain to the Docker project in hPanel so Hostinger/Traefik can issue HTTPS.'
