@@ -3,20 +3,93 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Mirroried LED Sponsor Portal</title>
+  <meta name="description" content="Mirroried LED Advertising on the Go — mobile showroom advertising, sponsorship and campaign reporting.">
+  <title>Mirroried LED | Advertising on the Go</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main>
-    <section id="loginView" class="login-shell">
+    <section id="marketingView" class="marketing-shell">
+      <header class="marketing-header">
+        <div class="brand-stack">
+          <div class="brand">MIRRORIED LED</div>
+          <span>Advertising on the Go</span>
+        </div>
+        <button id="publicLoginBtn" class="primary">Client Portal</button>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">MOBILE SHOWROOM • LIVE EVENTS • DIGITAL DISPLAY</span>
+          <h1>Your brand goes <em>where people go.</em></h1>
+          <p>Mirroried LED turns traveling showcase trailers and vans into advertising environments inside the showroom, outside on LED displays and infinity mirrors, at live events, and across approved digital content.</p>
+          <div class="hero-actions">
+            <button id="heroLoginBtn" class="primary large">Open Client Portal</button>
+            <a class="button-link secondary large" href="#ad-spaces">Explore Ad Spaces</a>
+          </div>
+          <div class="hero-facts">
+            <div><strong>Mobile</strong><span>Event-based exposure</span></div>
+            <div><strong>Flexible</strong><span>Interior + exterior inventory</span></div>
+            <div><strong>Verified</strong><span>Proof-of-delivery reporting</span></div>
+          </div>
+        </div>
+        <div class="network-preview">
+          <span class="live-label">ADVERTISING NETWORK</span>
+          <h2>Trailer 001</h2>
+          <p>West Coast Event Circuit</p>
+          <div class="preview-row"><span>Exterior LED displays</span><b>Campaign ready</b></div>
+          <div class="preview-row"><span>Exterior infinity windows</span><b>Limited inventory</b></div>
+          <div class="preview-row"><span>Interior sponsor mirrors</span><b>Available</b></div>
+          <div class="preview-row"><span>YouTube / social</span><b>Available</b></div>
+        </div>
+      </section>
+
+      <section id="ad-spaces" class="marketing-section">
+        <div class="section-heading">
+          <span class="eyebrow">ADVERTISING INVENTORY</span>
+          <h2>One campaign. Multiple touchpoints.</h2>
+          <p>Each advertising location is treated as inventory so Mirroried LED can scale from one traveling showroom to a multi-state fleet.</p>
+        </div>
+        <div class="marketing-grid">
+          <article><span class="tile-icon">▰</span><h3>Exterior Displays</h3><p>Trailer wall panels, LED video displays, showcase vans and exterior infinity-mirror windows.</p></article>
+          <article><span class="tile-icon">◇</span><h3>Interior Showroom</h3><p>Sponsor mirrors, product displays and approved digital screens inside the mobile showroom.</p></article>
+          <article><span class="tile-icon">◎</span><h3>Live Events</h3><p>Approved placements at sporting events, festivals, car shows and other event activations.</p></article>
+          <article><span class="tile-icon">▶</span><h3>Digital Content</h3><p>Website, YouTube and social deliverables that extend approved physical campaigns.</p></article>
+        </div>
+      </section>
+
+      <section class="marketing-section alt">
+        <div class="partner-layout">
+          <div>
+            <span class="eyebrow">SPONSOR PARTNER PROGRAM</span>
+            <h2>More than an ad buy.</h2>
+            <p>Partner campaigns can combine branded mirrors, display placements, event visibility and digital deliverables under one written agreement.</p>
+          </div>
+          <div class="partner-list">
+            <div><strong>Local Sponsor</strong><span>Recurring entry-level placement</span></div>
+            <div><strong>Featured Sponsor</strong><span>Expanded approved visibility</span></div>
+            <div><strong>Main Trailer Sponsor</strong><span>Premium trailer-level presence</span></div>
+            <div><strong>Build Partner</strong><span>In-kind or hybrid partnership</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="marketing-cta">
+        <div><span class="eyebrow">CLIENT PORTAL</span><h2>Campaigns, creative, approvals and proof in one place.</h2><p>Clients see only their approved campaign information and verified deliverables—not private fleet or infrastructure data.</p></div>
+        <button id="ctaLoginBtn" class="primary large">Client Sign In</button>
+      </section>
+    </section>
+
+    <section id="loginView" class="login-shell hidden">
       <div class="login-card">
+        <button id="backToMarketing" class="back-link" type="button">← Advertising on the Go</button>
         <div class="brand">MIRRORIED LED</div>
-        <h1>Sponsor Partner Portal</h1>
-        <p>Campaign status, approvals, deliverables, proof and reporting.</p>
+        <h1>Advertising Client Portal</h1>
+        <p>Campaign status, ad placements, approvals, deliverables, proof and reporting.</p>
         <form id="loginForm">
           <label>Email<input id="email" type="email" required autocomplete="username"></label>
           <label>Password<input id="password" type="password" required autocomplete="current-password"></label>
-          <button type="submit">Sign in</button>
+          <button type="submit" class="primary">Sign in</button>
         </form>
         <div id="demoBox" class="demo-box hidden">
           <strong>Demo mode</strong>
@@ -33,16 +106,20 @@
 
     <section id="appView" class="app hidden">
       <aside>
-        <div class="brand">MIRRORIED LED</div>
+        <div class="brand-stack side-brand">
+          <div class="brand">MIRRORIED LED</div>
+          <span>Advertising on the Go</span>
+        </div>
         <nav id="nav"></nav>
         <button id="logoutBtn" class="secondary">Sign out</button>
       </aside>
       <div class="workspace">
-        <header>
-          <div><h1 id="pageTitle">Dashboard</h1><p id="pageSub">Sponsor fulfillment and reporting</p></div>
+        <header class="workspace-header">
+          <div><span class="workspace-kicker">ADVERTISING CLIENT PORTAL</span><h1 id="pageTitle">Dashboard</h1><p id="pageSub">Campaign fulfillment and verified reporting</p></div>
           <div id="userBadge" class="user-badge"></div>
         </header>
         <section id="content"></section>
+        <div class="reporting-rule"><strong>Verified reporting rule:</strong> Mirroried LED reports written, measurable deliverables it can verify. The portal does not promise unverified impressions, audience size, sales, conversions or continuous exposure.</div>
       </div>
     </section>
   </main>
