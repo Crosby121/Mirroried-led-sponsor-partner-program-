@@ -1,18 +1,18 @@
 {
   "name": "mirroried-led-sponsor-portal",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "description": "Mirroried LED Sponsor Partner + Advertising on the Go Portal",
   "main": "production-server.js",
   "scripts": {
-    "start": "node -r ./advertising-preload.js production-server.js",
+    "start": "node -r ./advertising-preload.js -r ./commerce-preload.js production-server.js",
     "start:demo": "DEMO_MODE=true node server.js",
     "dev": "DEMO_MODE=true node server.js",
     "db:migrate": "node db/migrate.js",
     "db:bootstrap": "node db/bootstrap-admin.js",
     "db:create-sponsor": "node db/create-sponsor.js",
     "db:create-advertiser": "node db/create-advertiser.js",
-    "check": "node --check advertising-preload.js && node --check production-server.js && node --check server.js && node --check public/app.js && node --check public/advertising.js && node --check db/migrate.js && node --check db/bootstrap-admin.js && node --check db/create-sponsor.js && node --check db/create-advertiser.js"
+    "check": "node --check advertising-preload.js && node --check commerce-preload.js && node --check production-server.js && node --check server.js && node --check public/app.js && node --check public/advertising.js && node --check public/commerce-advertising.js && node --check public/partner-value.js && node --check db/migrate.js && node --check db/bootstrap-admin.js && node --check db/create-sponsor.js && node --check db/create-advertiser.js"
   },
   "dependencies": {
     "express": "^5.1.0",
