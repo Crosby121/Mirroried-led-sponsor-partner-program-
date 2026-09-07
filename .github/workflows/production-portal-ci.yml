@@ -72,6 +72,17 @@ jobs:
           ADVERTISER_ROLE: advertiser_approver
         run: npm run db:create-advertiser
 
+      - name: Create Sponsor Partner test company
+        working-directory: portal
+        env:
+          DATABASE_URL: postgresql://mirroried_test:mirroried_test_password@127.0.0.1:5432/mirroried_portal_test
+          SPONSOR_ID: spn-ci-partner
+          SPONSOR_NAME: CI Showcase Supply Partner
+          SPONSOR_CONTACT: CI Partner Manager
+          SPONSOR_EMAIL: ci-partner@mirroriedled.test
+          SPONSOR_CATEGORY: Showcase Supplies
+        run: npm run db:create-sponsor
+
       - name: Start production API in test mode
         working-directory: portal
         env:
@@ -87,7 +98,7 @@ jobs:
             sleep 1
           done
 
-      - name: Verify Sponsor Partner admin session
+      - name: Verify admin session and create partner login
         run: |
           curl -fsS -c /tmp/admin-cookies.txt \
             -H 'Content-Type: application/json' \
@@ -95,6 +106,33 @@ jobs:
             http://127.0.0.1:3000/api/login
           curl -fsS -b /tmp/admin-cookies.txt http://127.0.0.1:3000/api/me
           curl -fsS -b /tmp/admin-cookies.txt http://127.0.0.1:3000/api/dashboard
+          curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"email":"ci-partner-user@mirroriedled.test","password":"ci-partner-password-12345","name":"CI Partner Approver","role":"sponsor_approver","sponsorId":"spn-ci-partner"}' \
+            http://127.0.0.1:3000/api/users
+
+      - name: Verify Sponsor Partner contribution value ceiling
+        run: |
+          curl -fsS -c /tmp/partner-cookies.txt \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"ci-partner-user@mirroriedled.test","password":"ci-partner-password-12345"}' \
+            http://127.0.0.1:3000/api/login
+          CONTRIBUTION=$(curl -fsS -b /tmp/partner-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"contributionType":"product","description":"Showroom detailing and display products","offeredValue":1000,"notes":"CI contribution"}' \
+            http://127.0.0.1:3000/api/commerce/sponsor/contributions)
+          CID=$(echo "$CONTRIBUTION" | jq -r '.item.id')
+          echo "$CONTRIBUTION" | jq -e '.item.offeredValue == "1000" and .item.acceptedValue == "0" and .item.status == "offered"'
+          curl -fsS -X PATCH -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"status":"approved","acceptedValue":1000}' \
+            http://127.0.0.1:3000/api/commerce/sponsor/contributions/$CID | jq -e '.item.acceptedValue == "1000" and .item.status == "approved"'
+          curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d "{\"contributionId\":\"$CID\",\"name\":\"Interior Sponsor Mirror\",\"placementType\":\"mirror\",\"locationLabel\":\"Showroom 1 interior\",\"agreedValue\":1000}" \
+            http://127.0.0.1:3000/api/commerce/sponsor/placements | jq -e '.item.agreedValue == "1000"'
+          STATUS=$(curl -sS -o /tmp/over-allocation.json -w '%{http_code}' -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d "{\"contributionId\":\"$CID\",\"name\":\"Over Allocation\",\"placementType\":\"display\",\"agreedValue\":1}" \
+            http://127.0.0.1:3000/api/commerce/sponsor/placements)
+          test "$STATUS" = "409"
+          curl -fsS -b /tmp/partner-cookies.txt http://127.0.0.1:3000/api/commerce/sponsor/contributions \
+            | jq -e '.items[0].acceptedValue == "1000" and .items[0].allocatedValue == "1000" and .items[0].remainingValue == "0"'
 
       - name: Configure Advertising on the Go inventory
         run: |
@@ -138,8 +176,25 @@ jobs:
             -d "{\"packageId\":\"$PKG\",\"eventId\":\"$EVT\",\"showroomIds\":[\"$SHR1\",\"$SHR2\"],\"campaignName\":\"CI Game Day Campaign\"}" \
             http://127.0.0.1:3000/api/advertising/bookings)
           echo "$BOOKING" | jq -e '.bookingId and .campaignId and .status == "payment-pending"'
-          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/bookings
+          echo "$BOOKING" | jq -r '.bookingId' >/tmp/booking-id
           curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/campaigns
+
+      - name: Verify checkout request and payment confirmation
+        run: |
+          BID=$(cat /tmp/booking-id)
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/commerce/advertising/checkout \
+            | jq -e --arg BID "$BID" '.processorConnected == false and (.items[] | select(.bookingId==$BID) | .status == "payment-pending" and .balanceDue == "500")'
+          curl -fsS -b /tmp/advertiser-cookies.txt -H 'Content-Type: application/json' \
+            -d '{}' http://127.0.0.1:3000/api/commerce/advertising/bookings/$BID/request-invoice \
+            | jq -e '.item.status == "requested" and .item.amountDue == "500" and .processorConnected == false'
+          curl -fsS -b /tmp/admin-cookies.txt -H 'Content-Type: application/json' \
+            -d '{"amount":500,"paymentMethod":"invoice","providerReference":"CI-RECEIPT-500","notes":"CI verified payment"}' \
+            http://127.0.0.1:3000/api/commerce/advertising/admin/bookings/$BID/record-payment \
+            | jq -e '.bookingStatus == "confirmed" and .amountPaid == 500 and .balanceDue == 0'
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/commerce/advertising/checkout \
+            | jq -e --arg BID "$BID" '(.items[] | select(.bookingId==$BID) | .status == "confirmed" and .amountPaid == "500" and .balanceDue == "0")'
+          curl -fsS -b /tmp/advertiser-cookies.txt http://127.0.0.1:3000/api/advertising/bookings \
+            | jq -e --arg BID "$BID" '(.items[] | select(.id==$BID) | .status == "confirmed" and ([.showrooms[].status] | all(. == "confirmed")))'
 
       - name: Print portal log on failure
         if: failure()
