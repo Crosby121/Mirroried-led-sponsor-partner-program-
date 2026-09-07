@@ -1,15 +1,25 @@
 {
   "name": "mirroried-led-sponsor-portal",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "Mirroried LED Sponsor Partner Portal",
-  "main": "server.js",
+  "main": "production-server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "DEMO_MODE=true node server.js"
+    "start": "node production-server.js",
+    "start:demo": "DEMO_MODE=true node server.js",
+    "dev": "DEMO_MODE=true node server.js",
+    "db:migrate": "node db/migrate.js",
+    "db:bootstrap": "node db/bootstrap-admin.js",
+    "check": "node --check production-server.js && node --check server.js && node --check public/app.js && node --check db/migrate.js && node --check db/bootstrap-admin.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "license": "UNLICENSED"
 }
