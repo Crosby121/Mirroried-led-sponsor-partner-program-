@@ -36,21 +36,19 @@ CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions(expires_at);
 
 CREATE TABLE IF NOT EXISTS opportunities (
   id text PRIMARY KEY,
-  sponsor_id text REFERENCES sponsors(id) ON DELETE RESTRICT,
-  company_name text NOT NULL,
-  contact_name text,
-  contact_email text,
+  sponsor_id text NOT NULL REFERENCES sponsors(id) ON DELETE RESTRICT,
+  name text NOT NULL,
   objective text,
-  contribution_type text,
-  estimated_value numeric(12,2),
-  stage text NOT NULL DEFAULT 'target' CHECK (stage IN ('target','contacted','discovery','qualified','proposal','negotiation','won','lost','nurture')),
+  estimated_value numeric(12,2) NOT NULL DEFAULT 0,
+  decision_maker text,
+  next_step text,
+  status text NOT NULL DEFAULT 'target' CHECK (status IN ('target','contacted','discovery','qualified','proposal','negotiation','won','lost','nurture')),
+  campaign_id text,
   owner_user_id text REFERENCES users(id) ON DELETE SET NULL,
-  target_close_date date,
-  notes text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS opportunities_stage_idx ON opportunities(stage);
+CREATE INDEX IF NOT EXISTS opportunities_status_idx ON opportunities(status);
 CREATE INDEX IF NOT EXISTS opportunities_sponsor_idx ON opportunities(sponsor_id);
 
 CREATE TABLE IF NOT EXISTS campaigns (
@@ -71,6 +69,8 @@ CREATE TABLE IF NOT EXISTS campaigns (
 );
 CREATE INDEX IF NOT EXISTS campaigns_sponsor_idx ON campaigns(sponsor_id);
 CREATE INDEX IF NOT EXISTS campaigns_status_idx ON campaigns(status);
+ALTER TABLE opportunities DROP CONSTRAINT IF EXISTS opportunities_campaign_fk;
+ALTER TABLE opportunities ADD CONSTRAINT opportunities_campaign_fk FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS deliverables (
   id text PRIMARY KEY,
