@@ -7,12 +7,14 @@ This folder contains the deployable Phase 2 Sponsor Partner Portal.
 - dependency-free Node.js HTTP server
 - session-based authentication
 - role-based authorization
-- sponsor tenant isolation in API queries
+- sponsor tenant isolation in API queries and uploaded creative files
 - sponsor dashboard
+- sales opportunity pipeline with won-deal handoff to a draft campaign
 - campaigns and deliverables
 - creative asset uploads
 - sponsor creative approvals
 - proof-of-performance records
+- closeout report generation from fulfillment records
 - reports and renewal records
 - audit logging for material changes
 - mobile-responsive browser interface
@@ -85,7 +87,7 @@ Recommended public routing:
 
 - `/` -> portal application
 - `/api/*` -> same Node process
-- `/uploads/*` -> same Node process or protected object storage in a later release
+- `/uploads/*` -> same Node process; access requires an authenticated user with permission to view the asset's sponsor account
 
 ## Security rules
 
@@ -103,6 +105,9 @@ Recommended public routing:
 - `POST /api/logout`
 - `GET /api/me`
 - `GET /api/dashboard`
+- `GET /api/opportunities`
+- `POST /api/opportunities`
+- `PATCH /api/opportunities/:id` — setting status to `won` creates the draft campaign handoff
 - `GET /api/campaigns`
 - `PATCH /api/campaigns/:id`
 - `GET /api/deliverables`
@@ -114,10 +119,15 @@ Recommended public routing:
 - `GET /api/proofs`
 - `POST /api/proofs`
 - `GET /api/reports`
+- `POST /api/reports/generate`
 - `GET /api/renewals`
 - `GET /api/audit`
 - `POST /api/users`
 - `GET /api/health`
+
+## Automated verification
+
+`.github/workflows/portal-ci.yml` performs JavaScript syntax checks, starts the server in demo mode, checks the health endpoint, signs in through the real login route, and loads the sponsor dashboard.
 
 ## Current release boundary
 
