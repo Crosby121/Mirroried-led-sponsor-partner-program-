@@ -27,6 +27,24 @@ Mirroried LED sponsorships are structured as measurable marketing/business partn
 - `07-portal/` — sponsor portal requirements, permissions, data model
 - `08-operations/` — CRM pipeline, handoffs, renewal and offboarding
 - `templates/` — outreach, proposal, recap, and follow-up templates
+- `portal/` — deployable Sponsor Partner Portal application
+
+## Sponsor Portal
+
+Phase 2 is implemented in `portal/`.
+
+The portal includes:
+- session authentication;
+- sponsor-specific tenant isolation;
+- role-based access for sponsor viewers, sponsor approvers, sales, operations, and administrators;
+- campaign and deliverable visibility;
+- creative asset upload and approval decisions;
+- proof-of-performance records;
+- reports and renewal tracking;
+- audit logging;
+- mobile-responsive browser interface.
+
+See `portal/README.md` for demo and production deployment instructions.
 
 ## Sales pipeline
 `Target -> Contacted -> Discovery -> Qualified -> Proposal -> Negotiation -> Contracted -> Onboarding -> Active -> Reporting -> Renewal/Closed`
@@ -40,4 +58,4 @@ Do **not** say: “You will get X impressions,” “this will generate X sales,
 Prefer: “We can guarantee the written placements, content, display windows, campaign dates, approved video integrations, and reporting items listed in the agreement.”
 
 ## Version
-**1.0 — Sponsor Partner Program foundation**
+**2.0 — Sponsor Partner Program + deployable Sponsor Portal foundation**
