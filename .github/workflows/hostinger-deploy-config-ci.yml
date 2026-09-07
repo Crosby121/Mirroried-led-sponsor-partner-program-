@@ -1,0 +1,49 @@
+name: Hostinger Deployment Config CI
+
+on:
+  push:
+    paths:
+      - 'portal/deploy/hostinger-compose.yml'
+      - '.github/workflows/deploy-hostinger.yml'
+      - '.github/workflows/hostinger-deploy-config-ci.yml'
+      - 'portal/Dockerfile'
+      - 'portal/package.json'
+      - 'portal/production-server.js'
+      - 'portal/db/**'
+      - 'portal/lib/**'
+      - 'portal/public/**'
+  pull_request:
+    paths:
+      - 'portal/deploy/hostinger-compose.yml'
+      - '.github/workflows/deploy-hostinger.yml'
+      - '.github/workflows/hostinger-deploy-config-ci.yml'
+      - 'portal/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate compose interpolation
+        env:
+          PORTAL_GIT_REF: ${{ github.sha }}
+          POSTGRES_DB: mirroried_sponsor_portal
+          POSTGRES_USER: mirroried_portal
+          POSTGRES_PASSWORD: ci-postgres-password
+          ADMIN_EMAIL: ci-admin@mirroriedled.test
+          ADMIN_PASSWORD: ci-admin-password-long-enough
+          ADMIN_NAME: Mirroried LED Administrator
+          APP_ORIGIN: https://sponsors.mirroriedled.com
+          TRUST_PROXY: 'true'
+          SESSION_HOURS: '8'
+          PORT: '3000'
+        run: docker compose -f portal/deploy/hostinger-compose.yml config >/tmp/hostinger-compose-rendered.yml
+
+      - name: Verify production hostname and remote source pin
+        run: |
+          grep -q 'sponsors.mirroriedled.com' /tmp/hostinger-compose-rendered.yml
+          grep -q '${{ github.sha }}:portal' /tmp/hostinger-compose-rendered.yml
+
+      - name: Verify remote Git build context
+        run: docker build --quiet "https://github.com/Crosby121/Mirroried-led-sponsor-partner-program-.git#${{ github.sha }}:portal"
