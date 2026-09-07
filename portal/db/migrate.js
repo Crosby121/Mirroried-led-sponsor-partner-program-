@@ -11,7 +11,8 @@ async function main() {
     for (const file of files) {
       const done = await client.query('SELECT 1 FROM schema_migrations WHERE filename=$1', [file]);
       if (done.rowCount) continue;
-      const sql = fs.readFileSync(path.join(dir, file), 'utf8');
+      let sql = fs.readFileSync(path.join(dir, file), 'utf8');
+      sql = sql.replace(/^\s*BEGIN;\s*/i, '').replace(/\s*COMMIT;\s*$/i, '');
       console.log(`Applying ${file}`);
       await client.query('BEGIN');
       try {
