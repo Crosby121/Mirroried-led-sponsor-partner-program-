@@ -3,7 +3,7 @@
 ## Two separate environments
 
 ### Sponsor Partner Program
-This is a contribution/value-exchange partnership. A business provides products, equipment, materials or services Mirroried LED needs for the truck, trailers, vans or mobile showrooms.
+This is a contribution/value-exchange partnership. A business contributes negotiated **products, equipment, materials, services, cash, or a combination** that Mirroried LED accepts. In return, Mirroried LED provides the specific contracted sponsor benefits: an approved promotional video/social post, approved vehicle/showroom brand exposure, negotiated advertising display space, and a custom infinity mirror bearing approved sponsor artwork (with mirror size and configuration decided during negotiation).
 
 Flow:
 `Offer contribution -> Mirroried LED acceptance -> accepted value -> sponsor placement allocation -> fulfillment/proof`
@@ -15,6 +15,9 @@ Rules:
 - The portal blocks sponsor placement allocation above the remaining accepted value.
 - Cancelled sponsor placements release their allocated value.
 - Sponsor Partner value is not a paid Advertising on the Go booking balance.
+- The negotiated social video, vehicle branding and custom infinity mirror are separately itemized, approved and costed in the sponsor agreement; the mirror has **no preset size**. Existing placement-credit limits continue to apply to allocated ad space.
+- Sponsor-provided cash is recorded as a contribution, not automatically treated as an advertiser checkout payment. Cash and in-kind components must be documented distinctly.
+- Use the full [Sponsor Benefits and Display Specification](SPONSOR_BENEFITS_AND_AD_DISPLAY_SPEC.md) before promising deliverables.
 
 Example:
 - Partner offers approved showroom products valued at $1,000.
@@ -23,7 +26,7 @@ Example:
 - A $1,001 total allocation is rejected.
 
 ## Advertising on the Go
-This is paid event-based advertising.
+This is **paid event-based advertising space only**. Standard ad packages do not automatically include a fabricated infinity mirror, a custom social-video post, or vehicle/logo installation. Such extras require a separate, explicit agreement. Five planned day-based tiers are a future scope item; no live rates are implied by this document.
 
 Flow:
 `Package -> Calendar -> Event -> Showroom 1 / Showroom 2 / both -> Reservation -> Checkout -> Campaign -> Creative approval -> Display -> Proof`
