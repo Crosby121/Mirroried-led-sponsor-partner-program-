@@ -8,7 +8,7 @@ Purpose: help equip, maintain, and present Mirroried LED's truck, trailers, vans
 
 ### Value exchange
 
-A Sponsor Partner may provide products, equipment, materials, services, or other approved resources that Mirroried LED actually needs.
+A Sponsor Partner may provide approved products, equipment, materials, services, **cash**, or an agreed combination. Mirroried LED negotiates a documented exchange of sponsor benefits.
 
 Mirroried LED records the accepted contribution value and provides a written sponsor benefit with a value equal to or less than that accepted contribution value.
 
@@ -20,11 +20,12 @@ Example:
 
 ### Typical sponsor fulfillment
 
-- inside-showroom sponsor placement;
-- sponsor-branded mirror or display;
-- approved product showcase placement;
-- agreed logo/brand recognition;
-- event or digital deliverables only when specifically written into the partnership agreement.
+- a negotiated, custom-fabricated infinity mirror bearing the sponsor's authorized artwork, with **size agreed during negotiations** rather than fixed at signup;
+- a sponsor promotional video created by Mirroried LED, with specific approved posts to its social media channels;
+- specified branding/content appearances on Mirroried LED vehicles, trailers and/or mobile showrooms;
+- negotiated display advertising space on approved vehicle/showroom displays;
+- campaign asset approvals, fulfillment proof and written reports;
+- any extra event or digital deliverables only when separately written into the agreement.
 
 Sponsor Partners are not ordinary advertising customers and should not be forced through a paid advertising checkout flow.
 
@@ -44,7 +45,7 @@ Sponsor Partners are not ordinary advertising customers and should not be forced
 
 ## 2. Advertising on the Go
 
-Purpose: sell event-based advertising inventory to paying businesses through the Mirroried LED client portal.
+Purpose: sell **advertising space/time only** to paying businesses through the Mirroried LED client portal. Paid advertisers do not automatically receive sponsor mirrors, sponsor videos, or physical vehicle branding. Five day-based plan tiers are proposed for a later phase; their terms, availability and prices remain pending approval.
 
 ### Customer journey
 
@@ -91,6 +92,8 @@ The two environments may share:
 - reporting framework.
 
 They should not share the same commercial account type or value model.
+
+For HUB75/HUB75E output, both programs can share the approved media conversion/preview/display pipeline, but **not panel-controller access, private IP addresses, or unverified plug-and-play compatibility**. See [Sponsor Benefits and Display Specification](SPONSOR_BENEFITS_AND_AD_DISPLAY_SPEC.md).
 
 ## 4. Privacy boundary
 

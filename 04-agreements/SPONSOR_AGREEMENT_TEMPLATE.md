@@ -12,13 +12,16 @@ End date: [ ]
 
 ## 3. Sponsor contribution
 Sponsor will provide:
-- Cash: $[ ]
-- In-kind products/services: [ ]
-- Agreed estimated in-kind value: $[ ]
-- Due/delivery date: [ ]
+- Cash contribution: $[ ] and due/payment schedule: [ ]
+- In-kind products, equipment, materials and/or services: [ ]
+- Quantities/condition/service details: [ ]
+- Offered estimated in-kind value: $[ ]
+- Mirroried LED accepted in-kind value: $[ ]
+- Total accepted contribution basis (cash and in-kind recorded separately): $[ ]
+- Due/delivery date(s): [ ]
 
 ## 4. Mirroried LED deliverables
-Mirroried LED will deliver only the items listed in the attached Statement of Work, including quantity, channel/location, campaign term, creative requirements, and proof method.
+Mirroried LED will deliver only the items listed in the attached Statement of Work, including quantity, channel/location, campaign term, creative requirements, and proof method. For this sponsor arrangement, negotiate and explicitly document **(a)** a promotional video and its social-media publication(s), **(b)** approved brand or creative display on specified Mirroried LED vehicles/showrooms, **(c)** the sponsor's allocated advertising space/time, and **(d)** a custom infinity mirror carrying the sponsor's approved artwork. **The mirror's dimensions and configuration are not predetermined and must be agreed before fabrication.**
 
 ## 5. No performance guarantee
 Unless expressly written into the Statement of Work, Mirroried LED does not guarantee impressions, reach, audience size, leads, sales, conversions, revenue, or return on investment.
@@ -62,7 +65,11 @@ Sponsor representative: _________________________ Date: __________
 
 | Deliverable | Quantity | Location/Channel | Start | End | Proof Method | Creative Due |
 |---|---:|---|---|---|---|---|
-|  |  |  |  |  |  |  |
+| Sponsor promotional video produced | [ ] | Video format/platform [ ] | [ ] | [ ] | Approved final file [ ] | [ ] |
+| Sponsor video posted to social media | [ ] | Account(s)/URL(s) [ ] | [ ] | [ ] | Published link/screenshot [ ] | [ ] |
+| Vehicle/trailer/showroom sponsor placement | [ ] | Vehicle/surface/creative size [ ] | [ ] | [ ] | Dated photo/video [ ] | [ ] |
+| HUB75/HUB75E or other approved display ad space | [ ] | Screen/event/slot/duration [ ] | [ ] | [ ] | Verified display playback proof [ ] | [ ] |
+| Customized sponsor infinity mirror | [ ] | Sponsor image/design [ ]; agreed W×H×D [ ] | [ ] | [ ] | Accepted design and delivery photo [ ] | [ ] |
 
 ### Compensation
 Cash: $[ ]  
@@ -70,5 +77,25 @@ In-kind: [ ]
 Estimated in-kind value: $[ ]  
 Payment/delivery schedule: [ ]
 
+### Custom sponsor infinity mirror specification
+Approved image/logo asset and usage rights: [ ]  
+Mirror width × height × depth: [ ] × [ ] × [ ] (units: [ ])  
+Quantity: [ ] (one proposed unless negotiated otherwise)  
+Frame and mirror materials: [ ]  
+Engraving/LED/controller requirements: [ ]  
+Prototype/design approval date: [ ]  
+Delivery/pickup/shipping and cost allocation: [ ]  
+Fabrication acceptance and warranty terms: [ ]  
+
+### Media and vehicle/display specification
+Video duration, creative and required approvals: [ ]  
+Social platform/account, number of posts and publish windows: [ ]  
+Vehicle/trailer/showroom placement and dates: [ ]  
+Approved display hardware and tested playback dimensions/format: [ ]  
+Advertised slot length, repetition or display window: [ ]  
+Creative rights, required disclosures, safety and brand approvals: [ ]  
+
 ### Special terms
 [ ]
+
+**A standard Advertising on the Go purchase does not include this sponsorship package.**
