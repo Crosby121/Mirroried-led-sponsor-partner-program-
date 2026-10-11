@@ -1,0 +1,27 @@
+name: Checklist Browser CI
+on:
+  pull_request:
+    paths:
+      - 'portal/**'
+      - '.github/workflows/browser-checklist-ci.yml'
+  push:
+    paths:
+      - 'portal/**'
+      - '.github/workflows/browser-checklist-ci.yml'
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runtime
+        working-directory: portal
+        run: npm install --no-save --package-lock=false playwright@1.51.1
+      - name: Install Chromium
+        working-directory: portal
+        run: npx playwright install --with-deps chromium
+      - name: Verify desktop and phone checklist flows
+        run: node portal/test/browser-checklist.cjs
