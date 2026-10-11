@@ -12,7 +12,8 @@
     "db:bootstrap": "node db/bootstrap-admin.js",
     "db:create-sponsor": "node db/create-sponsor.js",
     "db:create-advertiser": "node db/create-advertiser.js",
-    "check": "node --check advertising-preload.js && node --check commerce-preload.js && node --check production-server.js && node --check server.js && node --check public/app.js && node --check public/advertising.js && node --check public/commerce-advertising.js && node --check public/partner-value.js && node --check db/migrate.js && node --check db/bootstrap-admin.js && node --check db/create-sponsor.js && node --check db/create-advertiser.js"
+    "check": "node --check advertising-preload.js && node --check commerce-preload.js && node --check production-server.js && node --check server.js && node --check public/app.js && node --check public/advertising.js && node --check public/commerce-advertising.js && node --check public/partner-value.js && node --check db/migrate.js && node --check db/bootstrap-admin.js && node --check db/create-sponsor.js && node --check db/create-advertiser.js && node --check public/checklist.js && node --check lib/agreement-checklist.js",
+    "test": "cd .. && node --test portal/test/*.test.js"
   },
   "dependencies": {
     "express": "^5.1.0",

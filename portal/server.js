@@ -1,3 +1,4 @@
+const { prepareChecklist } = require('./lib/agreement-checklist');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -113,6 +114,24 @@ async function api(req,res,pathname){
   if(approvalMatch&&req.method==='PATCH'){
     if(!allow(user,['sponsor_approver','operations','admin']))return json(res,403,{error:'Approval permission required'});const body=await readBody(req);if(!['approved','rejected'].includes(body.status))return json(res,400,{error:'status must be approved or rejected'});const item=db.approvals.find(a=>a.id===approvalMatch[1]);if(!item||!canSee(user,item))return json(res,404,{error:'Approval not found'});item.status=body.status;item.comment=String(body.comment||item.comment||'');item.decidedAt=now();item.decidedBy=user.id;audit(db,user,'decision','approval',item.id,{status:item.status});writeDb(db);return json(res,200,{item});
   }
+  const checklistMatch=pathname.match(/^\/api\/campaigns\/([^/]+)\/checklist$/);
+  if(checklistMatch&&req.method==='POST'){
+    if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});
+    let prepared;try{prepared=prepareChecklist(await readBody(req));}catch(error){return json(res,400,{error:error.message});}
+    const db=readDb();
+    const campaign=db.campaigns.find(c=>c.id===checklistMatch[1]);
+    if(!campaign)return json(res,404,{error:'Campaign not found'});
+    if(campaign.status==='cancelled')return json(res,409,{error:'Cancelled campaigns cannot generate a checklist'});
+    if(campaign.checklistFingerprint){
+      if(campaign.checklistFingerprint!==prepared.fingerprint)return json(res,409,{error:'A different agreement checklist already exists; review amendments separately'});
+      return json(res,200,{generated:false});
+    }
+    if(campaign.contractRef&&campaign.contractRef!==prepared.contractRef)return json(res,409,{error:'Agreement reference does not match the campaign'});
+    const items=prepared.promises.map(p=>({...p,id:id('del'),sponsorId:campaign.sponsorId,campaignId:campaign.id,status:'planned',plannedStart:null,inventoryAssignment:'',notes:'',createdAt:now(),updatedAt:now()}));
+    db.deliverables.push(...items);campaign.contractRef=prepared.contractRef;campaign.checklistFingerprint=prepared.fingerprint;campaign.checklistGeneratedAt=now();campaign.updatedAt=now();
+    audit(db,user,'generate-checklist','campaign',campaign.id,{contractRef:prepared.contractRef,count:items.length});writeDb(db);
+    return json(res,201,{generated:true,items});
+  }
   const campaignMatch=pathname.match(/^\/api\/campaigns\/([^/]+)$/);
   if(campaignMatch&&req.method==='PATCH'){
     if(!allow(user,['sales','operations','admin']))return json(res,403,{error:'Staff permission required'});const body=await readBody(req),item=db.campaigns.find(c=>c.id===campaignMatch[1]);if(!item)return json(res,404,{error:'Campaign not found'});if(body.status&&!STATUS.campaign.has(body.status))return json(res,400,{error:'Invalid campaign status'});for(const k of ['name','objective','startDate','endDate','status','contractRef','creativeStatus','renewalDate','renewalStatus'])if(body[k]!==undefined)item[k]=String(body[k]);item.updatedAt=now();audit(db,user,'update','campaign',item.id,{fields:Object.keys(body)});writeDb(db);return json(res,200,{item});
@@ -122,7 +141,7 @@ async function api(req,res,pathname){
     if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});const body=await readBody(req),item=db.deliverables.find(d=>d.id===deliverableMatch[1]);if(!item)return json(res,404,{error:'Deliverable not found'});if(body.status&&!STATUS.deliverable.has(body.status))return json(res,400,{error:'Invalid deliverable status'});for(const k of ['status','plannedStart','plannedEnd','inventoryAssignment','notes'])if(body[k]!==undefined)item[k]=String(body[k]);audit(db,user,'update','deliverable',item.id,{fields:Object.keys(body),status:item.status});writeDb(db);return json(res,200,{item});
   }
   if(pathname==='/api/proofs'&&req.method==='POST'){
-    if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});const body=await readBody(req),campaign=db.campaigns.find(c=>c.id===body.campaignId&&c.sponsorId===body.sponsorId);if(!campaign)return json(res,400,{error:'Valid sponsorId and campaignId required'});const proof={id:id('prf'),sponsorId:body.sponsorId,campaignId:body.campaignId,deliverableId:body.deliverableId||null,type:String(body.type||'proof'),title:String(body.title||'Proof of performance'),url:String(body.url||''),capturedAt:body.capturedAt||now(),notes:String(body.notes||''),createdBy:user.id,createdAt:now()};db.proofs.push(proof);audit(db,user,'create','proof',proof.id,{campaignId:proof.campaignId,deliverableId:proof.deliverableId});writeDb(db);return json(res,201,{item:proof});
+    if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});const body=await readBody(req),campaign=db.campaigns.find(c=>c.id===body.campaignId&&c.sponsorId===body.sponsorId);if(!campaign)return json(res,400,{error:'Valid sponsorId and campaignId required'});if(body.deliverableId&&!db.deliverables.some(d=>d.id===body.deliverableId&&d.sponsorId===body.sponsorId&&d.campaignId===body.campaignId))return json(res,400,{error:'Deliverable must belong to the selected sponsor and campaign'});const proof={id:id('prf'),sponsorId:body.sponsorId,campaignId:body.campaignId,deliverableId:body.deliverableId||null,type:String(body.type||'proof'),title:String(body.title||'Proof of performance'),url:String(body.url||''),capturedAt:body.capturedAt||now(),notes:String(body.notes||''),createdBy:user.id,createdAt:now()};db.proofs.push(proof);audit(db,user,'create','proof',proof.id,{campaignId:proof.campaignId,deliverableId:proof.deliverableId});writeDb(db);return json(res,201,{item:proof});
   }
   if(pathname==='/api/reports/generate'&&req.method==='POST'){
     if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});const body=await readBody(req),campaign=db.campaigns.find(c=>c.id===body.campaignId&&c.sponsorId===body.sponsorId);if(!campaign)return json(res,400,{error:'Valid sponsorId and campaignId required'});const deliverables=db.deliverables.filter(d=>d.campaignId===campaign.id),proofs=db.proofs.filter(p=>p.campaignId===campaign.id),fulfilled=deliverables.filter(d=>d.status==='fulfilled').length,exceptions=deliverables.filter(d=>['exception','make-good'].includes(d.status));const report={id:id('rpt'),sponsorId:campaign.sponsorId,campaignId:campaign.id,title:String(body.title||`${campaign.name} Closeout Report`),status:'generated',periodStart:campaign.startDate,periodEnd:campaign.endDate,summary:`${fulfilled} of ${deliverables.length} deliverables fulfilled; ${proofs.length} proof records; ${exceptions.length} exception/make-good records.`,deliverableSnapshot:deliverables.map(d=>({id:d.id,name:d.name,status:d.status})),proofIds:proofs.map(p=>p.id),generatedAt:now(),createdAt:now()};db.reports.push(report);audit(db,user,'generate','report',report.id,{campaignId:campaign.id});writeDb(db);return json(res,201,{item:report});

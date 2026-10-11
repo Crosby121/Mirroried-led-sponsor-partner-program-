@@ -21,6 +21,8 @@ jobs:
         run: |
           node --check portal/server.js
           node --check portal/public/app.js
+      - name: Partnership checklist tests
+        run: node --test portal/test/*.test.js
       - name: Start demo server
         run: |
           cd portal

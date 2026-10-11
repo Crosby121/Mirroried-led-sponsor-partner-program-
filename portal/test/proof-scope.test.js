@@ -1,0 +1,48 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {spawn}=require('node:child_process');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+const net=require('node:net');
+test('proof scope and agreement generation enforce permissions and prevent duplicate writes',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'sponsor-proof-'));
+ const data=JSON.parse(fs.readFileSync('portal/data/seed.json'));
+ data.deliverables.push({id:'foreign-sponsor',sponsorId:'other',campaignId:'cmp-demo-fall'}, {id:'foreign-campaign',sponsorId:'spn-demo',campaignId:'other'});
+ const dataFile=path.join(dir,'db.json');fs.writeFileSync(dataFile,JSON.stringify(data));
+ const reservation=net.createServer();await new Promise(r=>reservation.listen(0,'127.0.0.1',r));const port=reservation.address().port;await new Promise(r=>reservation.close(r));
+ const child=spawn(process.execPath,['portal/server.js'],{env:{...process.env,NODE_ENV:'test',DEMO_MODE:'true',PORT:String(port),DATA_FILE:dataFile,UPLOAD_DIR:path.join(dir,'uploads')},stdio:'ignore'});
+ t.after(async()=>{child.kill();await new Promise(r=>child.exitCode!==null?r():child.once('exit',r));fs.rmSync(dir,{recursive:true,force:true});});
+ const base=`http://127.0.0.1:${port}`;
+ for(let attempt=0;attempt<100;attempt++){try{if((await fetch(base+'/api/health')).ok)break;}catch{}await new Promise(r=>setTimeout(r,20));}
+ const login=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'ops@demo.mirroriedled.local',password:'demo'})});assert.equal(login.status,200);
+ const headers={'Content-Type':'application/json',Cookie:login.headers.get('set-cookie').split(';')[0]};
+ const post=id=>fetch(base+'/api/proofs',{method:'POST',headers,body:JSON.stringify({sponsorId:'spn-demo',campaignId:'cmp-demo-fall',deliverableId:id,title:'Evidence',url:'https://example.com/proof'})});
+ const before=JSON.parse(fs.readFileSync(dataFile)).proofs.length;
+ const auditBefore=JSON.parse(fs.readFileSync(dataFile)).audit.length;
+ for(const id of ['foreign-sponsor','foreign-campaign','missing'])assert.equal((await post(id)).status,400,id);
+ assert.equal(JSON.parse(fs.readFileSync(dataFile)).proofs.length,before);
+ assert.equal(JSON.parse(fs.readFileSync(dataFile)).audit.length,auditBefore);
+ assert.equal((await post('del-window-01')).status,201);
+ assert.equal((await post(null)).status,201,'Campaign-level proof remains supported');
+ const checklistBody={agreementApproved:true,contractRef:'SOW-DEMO-001',promises:[{name:'Sponsor mirror',dueDate:'2026-11-15'}]};
+ const generate=body=>fetch(base+'/api/campaigns/cmp-demo-fall/checklist',{method:'POST',headers,body:JSON.stringify(body)});
+ const count=()=>JSON.parse(fs.readFileSync(dataFile)).deliverables.length;
+ const originalCount=count();
+ assert.equal((await generate({...checklistBody,agreementApproved:false})).status,400);
+ assert.equal(count(),originalCount);
+ const concurrent=await Promise.all([generate(checklistBody),generate(checklistBody)]);
+ assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,201]);
+ assert.equal(count(),originalCount+1,'Repeated requests create one set of promises');
+ assert.equal((await generate({...checklistBody,promises:[{name:'Changed promise',dueDate:'2026-11-15'}]})).status,409);
+ assert.equal(count(),originalCount+1);
+ const viewerLogin=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'viewer@demo.mirroriedled.local',password:'demo'})});
+ const viewer=await fetch(base+'/api/campaigns/cmp-demo-fall/checklist',{method:'POST',headers:{'Content-Type':'application/json',Cookie:viewerLogin.headers.get('set-cookie').split(';')[0]},body:JSON.stringify(checklistBody)});
+ assert.equal(viewer.status,403);
+ const updateStatus=(cookie,status)=>fetch(base+'/api/deliverables/del-window-01',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({status,notes:'Checklist progress test'})});
+ assert.equal((await updateStatus(viewerLogin.headers.get('set-cookie').split(';')[0],'fulfilled')).status,403);
+ const changed=await updateStatus(headers.Cookie,'active');assert.equal(changed.status,200);assert.equal((await changed.json()).item.status,'active');
+ assert.equal(JSON.parse(fs.readFileSync(dataFile)).audit.at(-1).entityId,'del-window-01');
+
+
+});

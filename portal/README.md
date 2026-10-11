@@ -202,3 +202,13 @@ Back up both together. A database backup without uploads, or uploads without mat
 ## Current release boundary
 
 PostgreSQL is now the production datastore. Creative files remain on a protected persistent filesystem volume. For multi-server scaling, replace that volume with private object storage while retaining the authenticated asset route and sponsor-authorization checks.
+
+## Agreement checklist generation
+
+Operations/admin users can select **Generate agreement checklist** from the Partnership Checklist. Enter the approved agreement reference and one promise per line (`name | YYYY-MM-DD`), then confirm the promises match the approved agreement. This records staff confirmation; it does not implement electronic signatures or independently verify a signed document.
+
+`POST /api/campaigns/:id/checklist` accepts `agreementApproved: true`, `contractRef`, and `promises: [{name, dueDate, type?}]`. Each promise becomes a planned deliverable. Existing deliverables remain intact; staff should review existing promises before generation to avoid repeating legacy manually entered obligations.
+
+An identical retry returns HTTP 200 without adding records. Changed batches, mismatched agreement references, or cancelled campaigns return HTTP 409. Production uses a campaign row lock and one database transaction to prevent concurrent duplicate batches and partial writes. Sponsor roles cannot generate checklists. Apply migration `005_agreement_checklist.sql` with `npm run db:migrate` before running the updated production server.
+
+Amendments, electronic signatures, task assignees, event reservations, and contribution-to-agreement linkage are later work. Contributions continue to use the separate Partner Value ledger.
