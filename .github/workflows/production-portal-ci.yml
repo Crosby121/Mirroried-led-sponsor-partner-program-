@@ -98,11 +98,11 @@ jobs:
             sleep 1
           done
 
-      - name: Verify PostgreSQL checklist concurrency and rollback
+      - name: Verify PostgreSQL checklist and creative approvals
         env:
           TEST_DATABASE_URL: postgresql://mirroried_test:mirroried_test_password@127.0.0.1:5432/mirroried_portal_test
           TEST_PORTAL_URL: http://127.0.0.1:3000
-        run: node --test portal/test/production-checklist.integration.js
+        run: node --test portal/test/production-checklist.integration.js portal/test/production-asset-approvals.integration.js
 
       - name: Verify admin session and create partner login
         run: |
@@ -205,3 +205,4 @@ jobs:
       - name: Print portal log on failure
         if: failure()
         run: cat /tmp/mirroried-portal.log || true
+
