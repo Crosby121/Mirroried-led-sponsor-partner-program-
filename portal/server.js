@@ -1,3 +1,4 @@
+const { prepareChecklist } = require('./lib/agreement-checklist');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -112,6 +113,24 @@ async function api(req,res,pathname){
   const approvalMatch=pathname.match(/^\/api\/approvals\/([^/]+)$/);
   if(approvalMatch&&req.method==='PATCH'){
     if(!allow(user,['sponsor_approver','operations','admin']))return json(res,403,{error:'Approval permission required'});const body=await readBody(req);if(!['approved','rejected'].includes(body.status))return json(res,400,{error:'status must be approved or rejected'});const item=db.approvals.find(a=>a.id===approvalMatch[1]);if(!item||!canSee(user,item))return json(res,404,{error:'Approval not found'});item.status=body.status;item.comment=String(body.comment||item.comment||'');item.decidedAt=now();item.decidedBy=user.id;audit(db,user,'decision','approval',item.id,{status:item.status});writeDb(db);return json(res,200,{item});
+  }
+  const checklistMatch=pathname.match(/^\/api\/campaigns\/([^/]+)\/checklist$/);
+  if(checklistMatch&&req.method==='POST'){
+    if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});
+    let prepared;try{prepared=prepareChecklist(await readBody(req));}catch(error){return json(res,400,{error:error.message});}
+    const db=readDb();
+    const campaign=db.campaigns.find(c=>c.id===checklistMatch[1]);
+    if(!campaign)return json(res,404,{error:'Campaign not found'});
+    if(campaign.status==='cancelled')return json(res,409,{error:'Cancelled campaigns cannot generate a checklist'});
+    if(campaign.checklistFingerprint){
+      if(campaign.checklistFingerprint!==prepared.fingerprint)return json(res,409,{error:'A different agreement checklist already exists; review amendments separately'});
+      return json(res,200,{generated:false});
+    }
+    if(campaign.contractRef&&campaign.contractRef!==prepared.contractRef)return json(res,409,{error:'Agreement reference does not match the campaign'});
+    const items=prepared.promises.map(p=>({...p,id:id('del'),sponsorId:campaign.sponsorId,campaignId:campaign.id,status:'planned',plannedStart:null,inventoryAssignment:'',notes:'',createdAt:now(),updatedAt:now()}));
+    db.deliverables.push(...items);campaign.contractRef=prepared.contractRef;campaign.checklistFingerprint=prepared.fingerprint;campaign.checklistGeneratedAt=now();campaign.updatedAt=now();
+    audit(db,user,'generate-checklist','campaign',campaign.id,{contractRef:prepared.contractRef,count:items.length});writeDb(db);
+    return json(res,201,{generated:true,items});
   }
   const campaignMatch=pathname.match(/^\/api\/campaigns\/([^/]+)$/);
   if(campaignMatch&&req.method==='PATCH'){

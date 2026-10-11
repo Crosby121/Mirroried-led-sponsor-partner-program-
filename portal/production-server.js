@@ -1,3 +1,4 @@
+const { prepareChecklist } = require('./lib/agreement-checklist');
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -249,6 +250,31 @@ app.patch('/api/campaigns/:id', auth, requireRoles('sales','operations','admin')
     const out = await pool.query(campaignSelect('WHERE id=$1'), [c.id]);
     res.json({ item: out.rows[0] });
   } catch (e) { await client.query('ROLLBACK').catch(() => {}); next(e); } finally { client.release(); }
+});
+
+app.post('/api/campaigns/:id/checklist', auth, requireRoles('operations','admin'), async (req,res,next)=>{
+  let prepared;try{prepared=prepareChecklist(req.body);}catch(error){return res.status(400).json({error:error.message});}
+  const client=await pool.connect();
+  try{
+    await client.query('BEGIN');
+    const result=await client.query('SELECT * FROM campaigns WHERE id=$1 FOR UPDATE',[req.params.id]);
+    const campaign=result.rows[0];
+    let error=null;
+    if(!campaign)error={status:404,message:'Campaign not found'};
+    else if(campaign.status==='cancelled')error={status:409,message:'Cancelled campaigns cannot generate a checklist'};
+    else if(campaign.checklist_fingerprint&&campaign.checklist_fingerprint!==prepared.fingerprint)error={status:409,message:'A different agreement checklist already exists; review amendments separately'};
+    else if(!campaign.checklist_fingerprint&&campaign.contract_ref&&campaign.contract_ref!==prepared.contractRef)error={status:409,message:'Agreement reference does not match the campaign'};
+    if(error){await client.query('ROLLBACK');return res.status(error.status).json({error:error.message});}
+    if(campaign.checklist_fingerprint){await client.query('COMMIT');return res.json({generated:false});}
+    const items=[];
+    for(const promise of prepared.promises){
+      const inserted=await client.query(`INSERT INTO deliverables(id,sponsor_id,campaign_id,name,type,status,planned_end) VALUES($1,$2,$3,$4,$5,'planned',$6) RETURNING id,name,status,planned_end AS "plannedEnd"`,[randomId('del'),campaign.sponsor_id,campaign.id,promise.name,promise.type,promise.plannedEnd]);
+      items.push(inserted.rows[0]);
+    }
+    await client.query('UPDATE campaigns SET contract_ref=$2,checklist_fingerprint=$3,checklist_generated_at=now(),updated_at=now() WHERE id=$1',[campaign.id,prepared.contractRef,prepared.fingerprint]);
+    await audit(client,req.user,'generate-checklist','campaign',campaign.id,{contractRef:prepared.contractRef,count:items.length});
+    await client.query('COMMIT');res.status(201).json({generated:true,items});
+  }catch(error){await client.query('ROLLBACK').catch(()=>{});next(error);}finally{client.release();}
 });
 
 app.get('/api/deliverables', auth, async (req, res, next) => {
