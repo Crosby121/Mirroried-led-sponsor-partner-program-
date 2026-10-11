@@ -341,6 +341,10 @@ app.post('/api/proofs', auth, requireRoles('operations','admin'), async (req, re
   try {
     const campaign = await client.query('SELECT id FROM campaigns WHERE id=$1 AND sponsor_id=$2', [req.body.campaignId, req.body.sponsorId]);
     if (!campaign.rowCount) return res.status(400).json({ error: 'Valid sponsorId and campaignId required' });
+    if (req.body.deliverableId) {
+      const deliverable = await client.query('SELECT id FROM deliverables WHERE id=$1 AND sponsor_id=$2 AND campaign_id=$3', [req.body.deliverableId, req.body.sponsorId, req.body.campaignId]);
+      if (!deliverable.rowCount) return res.status(400).json({ error: 'Deliverable must belong to the selected sponsor and campaign' });
+    }
     const id = randomId('prf');
     await client.query('BEGIN');
     const out = await client.query(`INSERT INTO proofs(id,sponsor_id,campaign_id,deliverable_id,type,title,url,captured_at,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,COALESCE($8::timestamptz,now()),$9,$10) RETURNING id,sponsor_id AS "sponsorId",campaign_id AS "campaignId",deliverable_id AS "deliverableId",type,title,url,captured_at AS "capturedAt",notes,created_at AS "createdAt"`, [id, req.body.sponsorId, req.body.campaignId, req.body.deliverableId || null, String(req.body.type || 'proof'), String(req.body.title || 'Proof of performance'), String(req.body.url || ''), req.body.capturedAt || null, String(req.body.notes || ''), req.user.id]);
