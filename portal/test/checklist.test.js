@@ -36,7 +36,27 @@ test('sponsors and cancelled promises have no status actions',()=>{
  assert.deepEqual(statusOptions('planned','sponsor_viewer'),[]);
  assert.deepEqual(statusOptions('cancelled','admin'),[]);
 });
-test('operations can start, fulfill or flag a promise without repeating its current status',()=>{
- assert.deepEqual(statusOptions('planned','operations'),['active','fulfilled','exception']);
- assert.deepEqual(statusOptions('active','admin'),['fulfilled','exception']);
+test('operations can start, fulfill or flag a promise while preserving its current status',()=>{
+ assert.deepEqual(statusOptions('planned','operations'),['planned','active','fulfilled','exception']);
+ assert.deepEqual(statusOptions('active','admin'),['active','fulfilled','exception']);
+});
+
+test('fulfilled status remains selected when only progress notes are edited',()=>{
+ assert.equal(statusOptions('fulfilled','operations')[0],'fulfilled');
+});
+test('delayed staff responses cannot render after account switching',async()=>{
+ const content={innerHTML:'initial'},title={textContent:''};let resolve;
+ const response=new Promise(r=>resolve=r);
+ const context={state:{user:{id:'admin',role:'admin'},page:'checklist'},basePages:[],loadPage:async()=>{},$:selector=>selector==='#content'?content:title,api:()=>response,esc:String,badge:String,table:()=>'',document:{querySelectorAll:()=>[]}};
+ vm.createContext(context);vm.runInContext(fs.readFileSync('portal/public/checklist.js','utf8'),context);
+ const pending=context.loadPage();context.state.user={id:'sponsor',role:'sponsor_viewer'};content.innerHTML='Sponsor dashboard';
+ resolve({items:[{id:'private',name:'Private staff campaign',sponsorId:'other'}]});await pending;
+ assert.equal(content.innerHTML,'Sponsor dashboard');
+});
+test('delayed checklist response cannot overwrite another page',async()=>{
+ const content={innerHTML:''};let resolve;const response=new Promise(r=>resolve=r);
+ const context={state:{user:{id:'admin',role:'admin'},page:'checklist'},basePages:[],loadPage:async()=>{content.innerHTML='Other page';},$:()=>content,api:()=>response,esc:String,badge:String,table:()=>'',document:{querySelectorAll:()=>[]}};
+ vm.createContext(context);vm.runInContext(fs.readFileSync('portal/public/checklist.js','utf8'),context);
+ const pending=context.loadPage();context.state.page='dashboard';await context.loadPage();resolve({items:[]});await pending;
+ assert.equal(content.innerHTML,'Other page');
 });
