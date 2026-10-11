@@ -8,4 +8,4 @@ echo "Ensuring production administrator exists..."
 node db/bootstrap-admin.js
 
 echo "Starting Mirroried LED Sponsor Portal..."
-exec node production-server.js
+exec node -r ./advertising-preload.js -r ./commerce-preload.js production-server.js
