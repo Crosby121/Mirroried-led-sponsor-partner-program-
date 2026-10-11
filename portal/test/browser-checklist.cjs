@@ -25,7 +25,8 @@ async function run(){
    await page.locator('[name="notes"]').fill('Notes-only update');await page.getByRole('button',{name:'Save status'}).click();
    await row.getByRole('button',{name:'Add proof'}).click();await page.locator('[name="title"]').fill('Published video');await page.locator('[name="url"]').fill('https://example.com/video');await page.getByRole('button',{name:'Save proof'}).click();
    await row.getByText('Complete',{exact:true}).waitFor();
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Page should not overflow horizontally');
+   const layout=await page.evaluate(()=>({width:window.innerWidth,scrollWidth:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width && r.right>window.innerWidth+1 && !e.closest('.table-wrap');}).map(e=>({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width})).slice(0,8)}));
+   assert.ok(layout.scrollWidth<=layout.width,'Page should not overflow horizontally: '+JSON.stringify(layout));
    await page.evaluate(()=>document.querySelector('#logoutBtn').click());await page.locator('#publicLoginBtn').click();
    await page.locator('#email').fill('viewer@demo.mirroriedled.local');await page.locator('#password').fill('demo');await page.getByRole('button',{name:'Sign in',exact:true}).click();
    await page.getByRole('button',{name:'Partnership Checklist',exact:true}).click();await page.getByText(name,{exact:true}).waitFor();
