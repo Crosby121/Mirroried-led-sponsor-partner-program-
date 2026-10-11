@@ -26,3 +26,17 @@ test('sponsor entrypoint loads checklist after authenticated application scripts
  assert.ok(html.indexOf('/checklist.js')>html.indexOf('/partner-value.js'));
  assert.ok(!fs.readFileSync('portal/public/index.html','utf8').includes('/checklist.js'));
 });
+function statusOptions(status,role){
+ const context={};vm.createContext(context);
+ vm.runInContext(fs.readFileSync('portal/public/checklist.js','utf8').split('// Browser integration')[0],context);
+ assert.equal(typeof context.checklistStatusOptions,'function','Checklist status controls are missing');
+ return Array.from(context.checklistStatusOptions({status},role),o=>o.value);
+}
+test('sponsors and cancelled promises have no status actions',()=>{
+ assert.deepEqual(statusOptions('planned','sponsor_viewer'),[]);
+ assert.deepEqual(statusOptions('cancelled','admin'),[]);
+});
+test('operations can start, fulfill or flag a promise without repeating its current status',()=>{
+ assert.deepEqual(statusOptions('planned','operations'),['active','fulfilled','exception']);
+ assert.deepEqual(statusOptions('active','admin'),['fulfilled','exception']);
+});

@@ -39,5 +39,10 @@ test('proof scope and agreement generation enforce permissions and prevent dupli
  const viewerLogin=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'viewer@demo.mirroriedled.local',password:'demo'})});
  const viewer=await fetch(base+'/api/campaigns/cmp-demo-fall/checklist',{method:'POST',headers:{'Content-Type':'application/json',Cookie:viewerLogin.headers.get('set-cookie').split(';')[0]},body:JSON.stringify(checklistBody)});
  assert.equal(viewer.status,403);
+ const updateStatus=(cookie,status)=>fetch(base+'/api/deliverables/del-window-01',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:cookie},body:JSON.stringify({status,notes:'Checklist progress test'})});
+ assert.equal((await updateStatus(viewerLogin.headers.get('set-cookie').split(';')[0],'fulfilled')).status,403);
+ const changed=await updateStatus(headers.Cookie,'active');assert.equal(changed.status,200);assert.equal((await changed.json()).item.status,'active');
+ assert.equal(JSON.parse(fs.readFileSync(dataFile)).audit.at(-1).entityId,'del-window-01');
+
 
 });

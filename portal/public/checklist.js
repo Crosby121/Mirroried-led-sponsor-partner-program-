@@ -8,6 +8,11 @@ function checklistRows(deliverables, proofs, today = new Date().toISOString().sl
   });
 }
 
+function checklistStatusOptions(item, role) {
+  if(!['operations','admin'].includes(role) || item.status === 'cancelled') return [];
+  return [{value:'active',label:'In progress'},{value:'fulfilled',label:'Fulfilled'},{value:'exception',label:'Needs follow-up'}].filter(option=>option.value !== item.status);
+}
+
 // Browser integration
 basePages.splice(1,0,['checklist','Partnership Checklist']);
 const checklistOriginalLoadPage = loadPage;
@@ -22,8 +27,23 @@ loadPage = async function () {
     const canEdit = ['operations','admin'].includes(state.user.role);
     $('#content').innerHTML = `<section class="panel"><h2>Agreements and promised benefits</h2><p>Track each promise independently. Review partner contributions in Partner Value.</p>${campaigns.map(c => {
       const promises = rows.filter(d => d.campaignId === c.id && d.sponsorId === c.sponsorId);
-      return `<article class="panel"><h3>${esc(c.name)}</h3><p>Agreement: ${esc(c.contractRef || 'No agreement reference recorded')} · ${badge(c.status)}</p>${canEdit && c.status !== 'cancelled' ? `<button data-generate-checklist="${esc(c.id)}">Generate agreement checklist</button>` : ''}${table(promises,[['Promise','name'],['Due','plannedEnd'],['Status','status',badge],['Next action','nextAction'],['Proof','evidence',v => v.map(p => esc(p.title)).join('<br>') || 'No proof attached'],['Action','id',(_,d) => canEdit && d.status !== 'cancelled' ? `<button data-checklist-proof="${esc(d.id)}">Add proof</button>` : '—']])}</article>`;
+      return `<article class="panel"><h3>${esc(c.name)}</h3><p>Agreement: ${esc(c.contractRef || 'No agreement reference recorded')} · ${badge(c.status)}</p>${canEdit && c.status !== 'cancelled' ? `<button data-generate-checklist="${esc(c.id)}">Generate agreement checklist</button>` : ''}${table(promises,[['Promise','name'],['Due','plannedEnd'],['Status','status',badge],['Next action','nextAction'],['Proof','evidence',v => v.map(p => esc(p.title)).join('<br>') || 'No proof attached'],['Action','id',(_,d) => canEdit && d.status !== 'cancelled' ? `<button data-checklist-proof="${esc(d.id)}">Add proof</button><button data-checklist-status="${esc(d.id)}">Update status</button>` : '—']])}</article>`;
     }).join('') || '<div class="empty">No partnerships yet.</div>'}</section>`;
+    document.querySelectorAll('[data-checklist-status]').forEach(button => {
+      button.onclick=()=>{
+        const item=rows.find(d=>d.id===button.dataset.checklistStatus);
+        const options=checklistStatusOptions(item,state.user.role);
+        $('#content').innerHTML=`<section class="panel"><h2>Update ${esc(item.name)}</h2><form id="checklistStatusForm" class="stack"><label>Status<select name="status" required>${options.map(o=>`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')}</select></label><label>Progress or follow-up notes<textarea name="notes" maxlength="4000">${esc(item.notes || '')}</textarea></label><p>Fulfilled records remain marked “Add proof” until matching evidence is attached.</p><button type="submit">Save status</button><button type="button" id="statusBack">Back</button><p id="statusError" role="alert"></p></form></section>`;
+        $('#statusBack').onclick=loadPage;
+        $('#checklistStatusForm').onsubmit=async event=>{
+          event.preventDefault();const form=event.currentTarget;const submit=form.querySelector('[type="submit"]');submit.disabled=true;
+          try{
+            await api(`/api/deliverables/${encodeURIComponent(item.id)}`,{method:'PATCH',body:JSON.stringify({status:form.elements.status.value,notes:form.elements.notes.value.trim()})});
+            await loadPage();
+          }catch(error){$('#statusError').textContent=error.message;submit.disabled=false;}
+        };
+      };
+    });
     document.querySelectorAll('[data-generate-checklist]').forEach(button => {
       button.onclick=()=>{
         const campaign=campaigns.find(c=>c.id===button.dataset.generateChecklist);
