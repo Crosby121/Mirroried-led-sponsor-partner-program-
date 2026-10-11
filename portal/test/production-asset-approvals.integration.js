@@ -1,0 +1,50 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {Pool}=require('pg');
+const crypto=require('node:crypto');
+const {hashPassword}=require('../lib/security');
+
+test('PostgreSQL creative approvals enforce scope, concurrent retries and immutable decisions',{skip:!process.env.TEST_DATABASE_URL,timeout:30000},async t=>{
+ const pool=new Pool({connectionString:process.env.TEST_DATABASE_URL});
+ assert.ok((await pool.query('SELECT current_database() AS name')).rows[0].name.endsWith('_test'));
+ const key=crypto.randomBytes(6).toString('hex'),sponsor=`spn-asset-${key}`,other=`spn-other-${key}`,campaign=`cmp-asset-${key}`;
+ const password=crypto.randomBytes(24).toString('hex'),pw=hashPassword(password);
+ const users=['admin','sponsor_approver','sponsor_viewer'].map(role=>({id:`usr-${role}-${key}`,email:`${role}-${key}@example.test`,role}));
+ t.after(async()=>{try{
+  await pool.query('DELETE FROM audit_log WHERE actor_id=ANY($1::text[])',[users.map(u=>u.id)]);
+  await pool.query('DELETE FROM campaigns WHERE id=$1',[campaign]);
+  await pool.query('DELETE FROM sessions WHERE user_id=ANY($1::text[])',[users.map(u=>u.id)]);
+  await pool.query('DELETE FROM users WHERE id=ANY($1::text[])',[users.map(u=>u.id)]);
+  await pool.query('DELETE FROM sponsors WHERE id=ANY($1::text[])',[[sponsor,other]]);
+ }finally{await pool.end();}});
+ await pool.query('INSERT INTO sponsors(id,name) VALUES($1,$3),($2,$3)',[sponsor,other,'Approval CI partner']);
+ await pool.query('INSERT INTO campaigns(id,sponsor_id,name) VALUES($1,$2,$3)',[campaign,sponsor,'Approval CI campaign']);
+ for(const u of users)await pool.query('INSERT INTO users(id,email,name,role,sponsor_id,salt,password_hash) VALUES($1,$2,$2,$3,$4,$5,$6)',[u.id,u.email,u.role,u.role==='admin'?null:other,pw.salt,pw.hash]);
+ const base=process.env.TEST_PORTAL_URL||'http://127.0.0.1:3000';
+ const cookies=[];
+ for(const u of users){const r=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:u.email,password})});assert.equal(r.status,200);cookies.push({'Content-Type':'application/json',Cookie:r.headers.get('set-cookie').split(';')[0]});}
+ const [admin,partner,viewer]=cookies;
+ const upload=await fetch(base+'/api/assets',{method:'POST',headers:admin,body:JSON.stringify({sponsorId:sponsor,campaignId:campaign,name:'Approval CI creative',fileName:'test.txt',dataUrl:'data:text/plain;base64,dGVzdA=='})});assert.equal(upload.status,201);
+ const asset=(await upload.json()).item;
+ const request=(headers=admin)=>fetch(`${base}/api/assets/${asset.id}/approval`,{method:'POST',headers,body:'{}'});
+ assert.equal((await request({})).status,401);assert.equal((await request(viewer)).status,403);assert.equal((await request(partner)).status,404);
+ assert.equal((await fetch(base+asset.url,{headers:partner})).status,404);assert.equal((await fetch(base+asset.url,{headers:admin})).status,200);
+ const attempts=await Promise.all(Array.from({length:6},()=>request()));
+ assert.deepEqual(attempts.map(r=>r.status).sort(),[200,200,200,200,200,201]);
+ const payloads=await Promise.all(attempts.map(r=>r.json()));const approval=payloads[0].item;
+ assert.ok(payloads.every(p=>p.item.id===approval.id));assert.equal(approval.assetId,asset.id);
+ assert.equal((await pool.query('SELECT count(*)::int AS n FROM approvals WHERE asset_id=$1',[asset.id])).rows[0].n,1);
+ assert.equal((await pool.query("SELECT count(*)::int AS n FROM audit_log WHERE entity_id=$1 AND action='request-approval'",[approval.id])).rows[0].n,1);
+ await pool.query('UPDATE users SET sponsor_id=$1 WHERE id=$2',[sponsor,users[1].id]);
+ const queue=await fetch(base+'/api/approvals',{headers:partner});assert.ok((await queue.json()).items.some(a=>a.id===approval.id));
+ const decide=(id,status,headers=admin)=>fetch(`${base}/api/approvals/${id}`,{method:'PATCH',headers,body:JSON.stringify({status})});
+ assert.equal((await decide(approval.id,'approved',viewer)).status,403);
+ assert.equal((await decide(approval.id,'rejected',partner)).status,200);
+ assert.equal((await pool.query('SELECT status FROM assets WHERE id=$1',[asset.id])).rows[0].status,'rejected');
+ const resubmit=await request(partner);assert.equal(resubmit.status,201);const next=(await resubmit.json()).item;
+ assert.equal((await decide(approval.id,'approved')).status,409);
+ assert.equal((await decide(next.id,'approved',partner)).status,200);
+ assert.equal((await decide(next.id,'approved',partner)).status,200);
+ assert.equal((await decide(next.id,'rejected')).status,409);assert.equal((await request()).status,409);
+ assert.equal((await pool.query('SELECT status FROM assets WHERE id=$1',[asset.id])).rows[0].status,'approved');
+});

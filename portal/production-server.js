@@ -300,16 +300,60 @@ app.patch('/api/deliverables/:id', auth, requireRoles('operations','admin'), asy
 app.get('/api/approvals', auth, async (req, res, next) => {
   try { const s = sponsorScope(req.user); const r = await pool.query(approvalSelect(`WHERE ${s.sql} ORDER BY requested_at DESC`), s.params); res.json({ items: r.rows }); } catch (e) { next(e); }
 });
-app.patch('/api/approvals/:id', auth, requireRoles('sponsor_approver','operations','admin'), async (req, res, next) => {
+app.post('/api/assets/:id/approval', auth, requireRoles('sponsor_approver','sales','operations','admin'), async (req, res, next) => {
   const client = await pool.connect();
   try {
-    const current = await client.query('SELECT * FROM approvals WHERE id=$1', [req.params.id]);
-    if (!current.rowCount || !canSee(req.user, current.rows[0].sponsor_id)) return res.status(404).json({ error: 'Approval not found' });
-    if (!['approved','rejected'].includes(req.body.status)) return res.status(400).json({ error: 'status must be approved or rejected' });
     await client.query('BEGIN');
-    const out = await client.query(`UPDATE approvals SET status=$2,comment=$3,decided_at=now(),decided_by=$4 WHERE id=$1 RETURNING id,sponsor_id AS "sponsorId",campaign_id AS "campaignId",asset_id AS "assetId",title,status,requested_at AS "requestedAt",decided_at AS "decidedAt",comment`, [req.params.id, req.body.status, String(req.body.comment || ''), req.user.id]);
-    if (current.rows[0].asset_id) await client.query('UPDATE assets SET status=$2 WHERE id=$1', [current.rows[0].asset_id, req.body.status]);
-    await audit(client, req.user, 'decision', 'approval', req.params.id, { status: req.body.status });
+    // All request and decision writes lock the asset first, then its approval.
+    const found = await client.query('SELECT * FROM assets WHERE id=$1 FOR UPDATE', [req.params.id]);
+    const asset = found.rows[0];
+    if (!asset || !canSee(req.user, asset.sponsor_id)) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Asset not found' });
+    }
+    if (!['submitted','rejected'].includes(asset.status)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Only submitted or rejected assets can request approval' });
+    }
+    const pending = await client.query(approvalSelect("WHERE asset_id=$1 AND status='pending' ORDER BY requested_at DESC LIMIT 1"), [asset.id]);
+    if (pending.rowCount) {
+      await client.query('COMMIT');
+      return res.json({ item: pending.rows[0], created: false });
+    }
+    const id = randomId('apr');
+    await client.query(`INSERT INTO approvals(id,sponsor_id,campaign_id,asset_id,title,requested_by)
+      VALUES($1,$2,$3,$4,$5,$6)`, [id, asset.sponsor_id, asset.campaign_id, asset.id, `Approve creative: ${asset.name}`, req.user.id]);
+    await client.query("UPDATE assets SET status='submitted' WHERE id=$1", [asset.id]);
+    await audit(client, req.user, 'request-approval', 'approval', id, { assetId: asset.id, campaignId: asset.campaign_id });
+    const out = await client.query(approvalSelect('WHERE id=$1'), [id]);
+    await client.query('COMMIT');
+    res.status(201).json({ item: out.rows[0], created: true });
+  } catch (e) { await client.query('ROLLBACK').catch(() => {}); next(e); } finally { client.release(); }
+});
+
+app.patch('/api/approvals/:id', auth, requireRoles('sponsor_approver','operations','admin'), async (req, res, next) => {
+  if (!['approved','rejected'].includes(req.body.status)) return res.status(400).json({ error: 'status must be approved or rejected' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const lookup = await client.query('SELECT * FROM approvals WHERE id=$1', [req.params.id]);
+    if (!lookup.rowCount || !canSee(req.user, lookup.rows[0].sponsor_id)) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Approval not found' });
+    }
+    if (lookup.rows[0].asset_id) await client.query('SELECT id FROM assets WHERE id=$1 FOR UPDATE', [lookup.rows[0].asset_id]);
+    const current = await client.query('SELECT * FROM approvals WHERE id=$1 FOR UPDATE', [req.params.id]);
+    const approval = current.rows[0];
+    if (approval.status !== 'pending') {
+      await client.query('ROLLBACK');
+      if (approval.status !== req.body.status) return res.status(409).json({ error: 'This approval has already been decided' });
+      const out = await pool.query(approvalSelect('WHERE id=$1'), [approval.id]);
+      return res.json({ item: out.rows[0] });
+    }
+    await client.query(`UPDATE approvals SET status=$2,comment=$3,decided_at=now(),decided_by=$4 WHERE id=$1`, [approval.id, req.body.status, String(req.body.comment || ''), req.user.id]);
+    if (approval.asset_id) await client.query('UPDATE assets SET status=$2 WHERE id=$1', [approval.asset_id, req.body.status]);
+    await audit(client, req.user, 'decision', 'approval', approval.id, { status: req.body.status });
+    const out = await client.query(approvalSelect('WHERE id=$1'), [approval.id]);
     await client.query('COMMIT');
     res.json({ item: out.rows[0] });
   } catch (e) { await client.query('ROLLBACK').catch(() => {}); next(e); } finally { client.release(); }
@@ -445,3 +489,4 @@ app.use((error, req, res, next) => {
 });
 
 app.listen(PORT, () => console.log(`Mirroried LED Sponsor Portal production server listening on :${PORT}`));
+

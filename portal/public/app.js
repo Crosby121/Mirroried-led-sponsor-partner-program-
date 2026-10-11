@@ -99,7 +99,7 @@ async function loadPage(){
     if(state.page==='placements') renderPlacements(items);
     if(state.page==='deliverables') $('#content').innerHTML=`<section class="panel">${table(items,[['Deliverable','name'],['Type','type'],['Status','status',badge],['Placement','inventoryAssignment'],['Notes','notes']])}</section>`;
     if(state.page==='approvals') renderApprovals(items);
-    if(state.page==='assets') renderAssets(items);
+    if(state.page==='assets') { const approvals=await api('/api/approvals');renderAssets(items,approvals.items||[]); }
     if(state.page==='proofs') $('#content').innerHTML=`<section class="panel">${table(items,[['Proof','title'],['Type','type'],['Captured','capturedAt'],['Notes','notes'],['Link','url',(v)=>v?`<a href="${esc(v)}" target="_blank" rel="noopener">Open</a>`:'—']])}</section>`;
     if(state.page==='reports') renderReports(items);
     if(state.page==='renewals') $('#content').innerHTML=`<section class="panel">${table(items,[['Status','status',badge],['Target date','targetDate'],['Owner','owner'],['Notes','notes']])}</section>`;
@@ -129,7 +129,7 @@ async function winOpportunity(id){
 
 function renderApprovals(items){
   const canDecide=['sponsor_approver','operations','admin'].includes(state.user.role);
-  $('#content').innerHTML=`<section class="panel">${table(items,[['Approval','title'],['Status','status',badge],['Comment','comment'],['Requested','requestedAt'],['Action','id',(_,i)=>canDecide&&i.status==='pending'?`<div class="row-actions"><button data-approve="${esc(i.id)}">Approve</button><button class="danger" data-reject="${esc(i.id)}">Reject</button></div>`:'—']])}</section>`;
+  $('#content').innerHTML=`<section class="panel">${table(items,[['Approval','title'],['Status','status',badge],['Comment','comment'],['Requested','requestedAt'],['Creative','assetId',v=>v?`<a href="/api/assets/${encodeURIComponent(v)}/file" target="_blank" rel="noopener">Open creative</a>`:'—'],['Action','id',(_,i)=>canDecide&&i.status==='pending'?`<div class="row-actions"><button data-approve="${esc(i.id)}">Approve</button><button class="danger" data-reject="${esc(i.id)}">Reject</button></div>`:'—']])}</section>`;
   document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>decide(b.dataset.approve,'approved'));
   document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>decide(b.dataset.reject,'rejected'));
 }
@@ -139,10 +139,33 @@ async function decide(id,status){
   try{await api(`/api/approvals/${id}`,{method:'PATCH',body:JSON.stringify({status,comment})});loadPage();}catch(e){alert(e.message);}
 }
 
-function renderAssets(items){
-  const rows=table(items,[['Asset','name'],['Status','status',badge],['Uploaded','uploadedAt'],['File','url',(v)=>v?`<a href="${esc(v)}" target="_blank" rel="noopener">Open</a>`:'Demo/reference']]);
-  $('#content').innerHTML=`<div class="grid-2"><section class="panel"><h2>Creative library</h2>${rows}</section><section class="panel"><h2>Upload campaign creative</h2><form id="assetForm" class="stack"><label>Campaign ID<input id="assetCampaign" required placeholder="cmp-..."></label>${['sales','operations','admin'].includes(state.user.role)?'<label>Sponsor ID<input id="assetSponsor" required placeholder="spn-..."></label>':''}<label>File<input id="assetFile" type="file" required></label><label>Asset name<input id="assetName" placeholder="Logo / campaign creative"></label><button type="submit">Upload asset</button><p class="muted">Max file size: 2 MB. Files remain behind authenticated sponsor-scoped routes.</p></form></section></div>`;
-  $('#assetForm').onsubmit=uploadAsset;
+function renderAssets(items, approvals=[]){
+  const canRequest=['sponsor_approver','sales','operations','admin'].includes(state.user.role);
+  const approvalAction=(_,asset)=>{
+    if(approvals.some(a=>a.assetId===asset.id&&a.status==='pending'))return 'Approval pending';
+    return canRequest&&['submitted','rejected'].includes(asset.status)?`<button data-request-approval="${esc(asset.id)}">Request approval</button>`:'—';
+  };
+  const rows=table(items,[['Asset','name'],['Status','status',badge],['Uploaded','uploadedAt'],['File','url',(v)=>v?`<a href="${esc(v)}" target="_blank" rel="noopener">Open</a>`:'Demo/reference'],['Approval','id',approvalAction]]);
+  $('#content').innerHTML=`<div class="grid-2"><section class="panel"><h2>Creative library</h2><p id="assetApprovalMessage" role="status"></p>${rows}</section><section class="panel"><h2>Upload campaign creative</h2><form id="assetForm" class="stack"><label>Campaign ID<input id="assetCampaign" required placeholder="cmp-..."></label>${['sales','operations','admin'].includes(state.user.role)?'<label>Sponsor ID<input id="assetSponsor" required placeholder="spn-..."></label>':''}<label>File<input id="assetFile" type="file" required></label><label>Asset name<input id="assetName" placeholder="Logo / campaign creative"></label><button type="submit">Upload asset</button><p class="muted">Max file size: 2 MB. Files remain behind authenticated sponsor-scoped routes.</p></form></section></div>`;
+  if(canRequest) $('#assetForm').onsubmit=uploadAsset;
+  else $('#assetForm').closest('section').remove();
+  document.querySelectorAll('[data-request-approval]').forEach(button=>button.onclick=()=>requestAssetApproval(button));
+}
+
+async function requestAssetApproval(button){
+  const user=state.user;
+  button.disabled=true;
+  const message=$('#assetApprovalMessage');
+  message.textContent='Requesting approval…';
+  try{
+    await api(`/api/assets/${encodeURIComponent(button.dataset.requestApproval)}/approval`,{method:'POST',body:'{}'});
+    if(state.user!==user||state.page!=='assets')return;
+    await loadPage();
+    if(state.user===user&&state.page==='assets'&&$('#assetApprovalMessage'))$('#assetApprovalMessage').textContent='Approval requested. Open Approvals to review.';
+  }catch(error){
+    if(state.user!==user||state.page!=='assets')return;
+    message.textContent=error.message;button.disabled=false;
+  }
 }
 
 async function uploadAsset(e){
@@ -191,3 +214,4 @@ document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>{$('#email').v
 $('#logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'}).catch(()=>{});state.user=null;state.page='dashboard';showMarketing();};
 
 boot();
+

@@ -77,6 +77,12 @@ async function api(req,res,pathname){
   const user=requireUser(req,res);if(!user)return;
   if(pathname==='/api/me'&&req.method==='GET')return json(res,200,{user:safeUser(user)});
   const db=readDb();
+  const assetFileMatch=pathname.match(/^\/api\/assets\/([^/]+)\/file$/);
+  if(assetFileMatch&&req.method==='GET'){
+    const asset=db.assets.find(a=>a.id===assetFileMatch[1]);
+    if(!asset||!canSee(user,asset)||!asset.url)return json(res,404,{error:'Asset not found'});
+    return serveStatic(req,res,asset.url);
+  }
 
   if(pathname==='/api/dashboard'&&req.method==='GET'){
     const campaigns=scoped(user,db.campaigns),deliverables=scoped(user,db.deliverables),approvals=scoped(user,db.approvals),proofs=scoped(user,db.proofs),renewals=scoped(user,db.renewals);
@@ -110,10 +116,29 @@ async function api(req,res,pathname){
   if(pathname==='/api/assets'&&req.method==='POST'){
     const body=await readBody(req),sponsorId=STAFF.has(user.role)?body.sponsorId:user.sponsorId;if(!sponsorId||!body.campaignId||!body.dataUrl)return json(res,400,{error:'sponsorId/campaignId and file data are required'});const campaign=db.campaigns.find(c=>c.id===body.campaignId&&c.sponsorId===sponsorId);if(!campaign)return json(res,404,{error:'Campaign not found in sponsor scope'});let file;try{file=saveDataUrl(body.dataUrl,body.fileName);}catch(e){return json(res,400,{error:e.message});}const asset={id:id('ast'),sponsorId,campaignId:campaign.id,name:String(body.name||body.fileName||'Creative asset'),fileName:file.fileName,mimeType:file.mimeType,url:file.url,status:'submitted',uploadedBy:user.id,uploadedAt:now()};db.assets.push(asset);audit(db,user,'upload','asset',asset.id,{campaignId:campaign.id});writeDb(db);return json(res,201,{item:asset});
   }
+  const assetApprovalMatch=pathname.match(/^\/api\/assets\/([^/]+)\/approval$/);
+  if(assetApprovalMatch&&req.method==='POST'){
+    if(!allow(user,['sponsor_approver','sales','operations','admin']))return json(res,403,{error:'Approval request permission required'});
+    await readBody(req);
+    const fresh=readDb(),asset=fresh.assets.find(a=>a.id===assetApprovalMatch[1]);
+    if(!asset||!canSee(user,asset))return json(res,404,{error:'Asset not found'});
+    if(!['submitted','rejected'].includes(asset.status))return json(res,409,{error:'Only submitted or rejected assets can request approval'});
+    const pending=fresh.approvals.find(a=>a.assetId===asset.id&&a.status==='pending');
+    if(pending)return json(res,200,{item:pending,created:false});
+    const item={id:id('apr'),sponsorId:asset.sponsorId,campaignId:asset.campaignId,assetId:asset.id,title:`Approve creative: ${asset.name}`,status:'pending',requestedAt:now(),requestedBy:user.id,decidedAt:null,decidedBy:null,comment:null};
+    fresh.approvals.push(item);asset.status='submitted';audit(fresh,user,'request-approval','approval',item.id,{assetId:asset.id,campaignId:asset.campaignId});writeDb(fresh);return json(res,201,{item,created:true});
+  }
   const approvalMatch=pathname.match(/^\/api\/approvals\/([^/]+)$/);
   if(approvalMatch&&req.method==='PATCH'){
-    if(!allow(user,['sponsor_approver','operations','admin']))return json(res,403,{error:'Approval permission required'});const body=await readBody(req);if(!['approved','rejected'].includes(body.status))return json(res,400,{error:'status must be approved or rejected'});const item=db.approvals.find(a=>a.id===approvalMatch[1]);if(!item||!canSee(user,item))return json(res,404,{error:'Approval not found'});item.status=body.status;item.comment=String(body.comment||item.comment||'');item.decidedAt=now();item.decidedBy=user.id;audit(db,user,'decision','approval',item.id,{status:item.status});writeDb(db);return json(res,200,{item});
+    if(!allow(user,['sponsor_approver','operations','admin']))return json(res,403,{error:'Approval permission required'});
+    const body=await readBody(req);if(!['approved','rejected'].includes(body.status))return json(res,400,{error:'status must be approved or rejected'});
+    const fresh=readDb(),item=fresh.approvals.find(a=>a.id===approvalMatch[1]);if(!item||!canSee(user,item))return json(res,404,{error:'Approval not found'});
+    if(item.status!=='pending')return item.status===body.status?json(res,200,{item}):json(res,409,{error:'This approval has already been decided'});
+    item.status=body.status;item.comment=String(body.comment||'');item.decidedAt=now();item.decidedBy=user.id;
+    const asset=fresh.assets.find(a=>a.id===item.assetId);if(asset)asset.status=item.status;
+    audit(fresh,user,'decision','approval',item.id,{status:item.status});writeDb(fresh);return json(res,200,{item});
   }
+
   const checklistMatch=pathname.match(/^\/api\/campaigns\/([^/]+)\/checklist$/);
   if(checklistMatch&&req.method==='POST'){
     if(!allow(user,['operations','admin']))return json(res,403,{error:'Operations permission required'});
@@ -158,3 +183,4 @@ function serveStatic(req,res,pathname){
 
 const server=http.createServer(async(req,res)=>{try{const url=new URL(req.url,`http://${req.headers.host||'localhost'}`);if(url.pathname.startsWith('/api/'))return await api(req,res,url.pathname);return serveStatic(req,res,url.pathname);}catch(e){console.error(e);if(!res.headersSent)json(res,500,{error:'Internal server error'});else res.end();}});
 server.listen(PORT,()=>console.log(`Mirroried LED Sponsor Portal running on http://localhost:${PORT}`));
+
