@@ -12,7 +12,7 @@ async function run(){
   for(const viewport of [{width:1440,height:900},{width:390,height:844}]){
    const context=await browser.newContext({viewport});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto('http://127.0.0.1:3199/sponsor.html');
-   await page.getByRole('button',{name:'Partner Sign In',exact:true}).click();
+   await page.locator('#publicLoginBtn').click();
    await page.locator('#email').fill('ops@demo.mirroriedled.local');await page.locator('#password').fill('demo');await page.getByRole('button',{name:'Sign in',exact:true}).click();
    await page.getByRole('button',{name:'Partnership Checklist',exact:true}).click();
    await page.getByRole('button',{name:'Generate agreement checklist',exact:true}).click();
